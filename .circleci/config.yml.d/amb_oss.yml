@@ -144,6 +144,8 @@ workflows:
       - "oss-chart-publish":
           <<: *filter-chart-release-only
           name: "oss-release-chart"
+          environment:
+            PUSH_CHART: "true"
 
   "OSS: Release":
     when: # Don't run this workflow in apro.git
