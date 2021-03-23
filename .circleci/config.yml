@@ -325,7 +325,7 @@ commands:
 
           thisversion=$(grep version: charts/ambassador/Chart.yaml | awk ' { print $2 }')
 
-          if [[ "<< pipeline.git.tag >>" != "chart-v${thisversion}" ]]; then
+          if [[ "<< pipeline.git.tag >>" != "chart-test-v${thisversion}" ]]; then
             echo "Chart version ${thisversion} doesn't match tag << pipeline.git.tag >>; halting"
             circleci step halt
           fi
@@ -643,7 +643,7 @@ _anchors:
   filter-chart-release-only:
     filters:
       tags:
-        only: /^chart\-v[0-9]+\.[0-9]+\.[0-9]+$/
+        only: /^chart\-test\-v[0-9]+\.[0-9]+\.[0-9]+$/
       branches:
         ignore: /.*/
 workflows:
@@ -697,7 +697,7 @@ workflows:
         name: "oss-release-chart"
         filters:
           tags:
-            only: /^chart\-v[0-9]+\.[0-9]+\.[0-9]+$/
+            only: /^chart\-test\-v[0-9]+\.[0-9]+\.[0-9]+$/
           branches:
             ignore: /.*/
   'OSS: Release':

@@ -97,7 +97,7 @@ _anchors:
   "filter-chart-release-only": &filter-chart-release-only
     filters:
       tags:
-        only: /^chart\-v[0-9]+\.[0-9]+\.[0-9]+$/
+        only: /^chart\-test\-v[0-9]+\.[0-9]+\.[0-9]+$/
       branches:
         ignore: /.*/
 
