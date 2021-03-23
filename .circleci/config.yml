@@ -314,15 +314,6 @@ commands:
     - run:
         name: "Diff changes"
         command: |
-          if [[ "<< pipeline.git.base_revision >>" == "" ]]; then
-            echo "There is no base_revision, therefore no changes"
-            circleci step halt
-          fi
-
-          COMMIT_RANGE="<< pipeline.git.base_revision >>...<<pipeline.git.revision>>"
-          echo "Commit range: " $COMMIT_RANGE
-          git --no-pager diff $COMMIT_RANGE --stat charts/ambassador
-
           thisversion=$(grep version: charts/ambassador/Chart.yaml | awk ' { print $2 }')
 
           if [[ "<< pipeline.git.tag >>" != "chart-test-v${thisversion}" ]]; then
