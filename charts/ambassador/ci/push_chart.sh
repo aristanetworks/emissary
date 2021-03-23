@@ -38,7 +38,7 @@ info "Pushing chart to S3 bucket $AWS_BUCKET"
 for f in "$CHART_PACKAGE" "index.yaml" ; do
   aws s3api put-object \
     --bucket "$AWS_BUCKET" \
-    --key "ambassador/$f" \
+    --key "ambassador/test_$f" \
     --body "$f" && passed "... ambassador/$f pushed"
 done
 
