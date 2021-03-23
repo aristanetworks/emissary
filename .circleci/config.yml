@@ -689,9 +689,6 @@ workflows:
       - equal:
         - "https://github.com/datawire/ambassador"
         - << pipeline.project.git_url >>
-      - equal:
-        - master
-        - << pipeline.git.branch >>
     jobs:
     - oss-chart-publish:
         name: "oss-release-chart"
