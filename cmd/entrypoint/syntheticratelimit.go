@@ -11,9 +11,9 @@ import (
 
 func iterateOverRateLimitServices(sh *SnapshotHolder, cb func(
 	rateLimitService *v3alpha1.RateLimitService, // rateLimitService
-	name string,                                 // name to unambiguously refer to the rateLimitServices by; might be more complex than "name.namespace" if it's an annotation
-	parentName string,                           // name of the thing that the annotation is on (or empty if not an annotation)
-	idx int,                                     // index of the rateLimitService; either in sh.k8sSnapshot.RateLimitServices or in sh.k8sSnapshot.Annotations[parentName]
+	name string, // name to unambiguously refer to the rateLimitServices by; might be more complex than "name.namespace" if it's an annotation
+	parentName string, // name of the thing that the annotation is on (or empty if not an annotation)
+	idx int, // index of the rateLimitService; either in sh.k8sSnapshot.RateLimitServices or in sh.k8sSnapshot.Annotations[parentName]
 )) {
 	envAmbID := GetAmbassadorID()
 
@@ -63,9 +63,9 @@ func ReconcileRateLimit(ctx context.Context, sh *SnapshotHolder, deltas *[]*kate
 
 		if IsLocalhost8500(rateLimitService.Spec.Service) {
 
-			dlog.Infof(ctx, "iteration %d : ", numRateLimitServices)
+			dlog.Infof(ctx, "rate iteration %d : ", numRateLimitServices)
 			dlog.Infof(ctx, "ratelimit %v : ", rateLimitService.ObjectMeta)
-			dlog.Infof(ctx, "parentname %s : ", parentName)
+			dlog.Infof(ctx, "rate parentname %s : ", parentName)
 
 			if parentName == "" && rateLimitService.ObjectMeta.Name == syntheticRateLimitServiceName {
 				syntheticRateLimit = rateLimitService
@@ -76,7 +76,7 @@ func ReconcileRateLimit(ctx context.Context, sh *SnapshotHolder, deltas *[]*kate
 				// is important so that <2.3 and >=2.3 installations can coexist.
 				// This is important, because for zero-downtime upgrades, they must
 				// coexist briefly while the new Deployment is getting rolled out.
-				dlog.Debugf(ctx, "ReconcileRateLimitServices: Forcing protocol_version=v3 on %s", name)
+				dlog.Infof(ctx, "ReconcileRateLimitServices: Forcing protocol_version=v3 on %s", name)
 				rateLimitService.Spec.ProtocolVersion = "v3"
 			}
 		}

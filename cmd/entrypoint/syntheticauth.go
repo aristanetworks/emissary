@@ -60,8 +60,16 @@ func ReconcileAuthServices(ctx context.Context, sh *SnapshotHolder, deltas *[]*k
 		syntheticAuth    *v3alpha1.AuthService
 		syntheticAuthIdx int
 	)
+
+	dlog.Infof(ctx, "Snap AS count %d : ", len(sh.k8sSnapshot.AuthServices))
+
 	iterateOverAuthServices(sh, func(authService *v3alpha1.AuthService, name, parentName string, i int) {
 		numAuthServices++
+
+		dlog.Infof(ctx, "auth iteration %d : ", numAuthServices)
+		dlog.Infof(ctx, "authservice %v : ", authService.ObjectMeta)
+		dlog.Infof(ctx, "auth parentname %s : ", parentName)
+
 		if IsLocalhost8500(authService.Spec.AuthService) {
 			if parentName == "" && authService.ObjectMeta.Name == syntheticAuthServiceName {
 				syntheticAuth = authService
@@ -72,7 +80,7 @@ func ReconcileAuthServices(ctx context.Context, sh *SnapshotHolder, deltas *[]*k
 				// is important so that <2.3 and >=2.3 installations can coexist.
 				// This is important, because for zero-downtime upgrades, they must
 				// coexist briefly while the new Deployment is getting rolled out.
-				dlog.Debugf(ctx, "ReconcileAuthServices: Forcing protocol_version=v3 on %s", name)
+				dlog.Infof(ctx, "ReconcileAuthServices: Forcing protocol_version=v3 on %s", name)
 				authService.Spec.ProtocolVersion = "v3"
 			}
 		}
@@ -80,7 +88,7 @@ func ReconcileAuthServices(ctx context.Context, sh *SnapshotHolder, deltas *[]*k
 
 	switch {
 	case numAuthServices == 0: // add the synthetic auth service
-		dlog.Debug(ctx, "ReconcileAuthServices: No user-provided AuthServices detected; injecting synthetic AuthService")
+		dlog.Info(ctx, "ReconcileAuthServices: No user-provided AuthServices detected; injecting synthetic AuthService")
 		syntheticAuth = &v3alpha1.AuthService{
 			TypeMeta: kates.TypeMeta{
 				Kind:       "AuthService",
@@ -104,7 +112,7 @@ func ReconcileAuthServices(ctx context.Context, sh *SnapshotHolder, deltas *[]*k
 			DeltaType:  kates.ObjectAdd,
 		})
 	case numAuthServices > 1 && syntheticAuth != nil: // remove the synthetic auth service
-		dlog.Debugf(ctx, "ReconcileAuthServices: %d user-provided AuthServices detected; removing synthetic AuthService", numAuthServices-1)
+		dlog.Infof(ctx, "ReconcileAuthServices: %d user-provided AuthServices detected; removing synthetic AuthService", numAuthServices-1)
 		sh.k8sSnapshot.AuthServices = append(
 			sh.k8sSnapshot.AuthServices[:syntheticAuthIdx],
 			sh.k8sSnapshot.AuthServices[syntheticAuthIdx+1:]...)
