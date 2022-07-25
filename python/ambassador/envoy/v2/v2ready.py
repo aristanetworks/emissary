@@ -16,6 +16,8 @@ import os
 
 from typing import List, TYPE_CHECKING
 
+from ...utils import parse_bool
+
 from .v2listener import V2Listener
 
 if TYPE_CHECKING:
@@ -28,7 +30,7 @@ ambassador_ready_port = int(os.getenv("AMBASSADOR_READY_PORT", "8002"))
 if ambassador_ready_port not in range(1, 32767):
     ambassador_ready_port = 8002
 # Note: Matches strconv.ParseBool for the go side
-ambassador_ready_log = os.getenv("AMBASSADOR_READY_LOG", "true") in ("true", "t", "1")
+ambassador_ready_log = parse_bool(os.getenv("AMBASSADOR_READY_LOG", "true"))
 ambassador_ready_ip = "127.0.0.1"
 
 
