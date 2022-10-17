@@ -14,7 +14,7 @@
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, ValuesView
 from typing import cast as typecast
 
-import json
+import hashlib
 import logging
 import os
 
@@ -325,7 +325,11 @@ class IR:
             if len(name) > 60:
                 # Too long. Gather this cluster by name prefix and normalize
                 # its name below.
-                short_name = name[0:40]
+                h = hashlib.new("sha1")
+                h.update(name.encode("utf-8"))
+                hd = h.hexdigest()[0:16].upper()
+
+                short_name = name[0:40] + "-" + hd
 
                 cluster = self.clusters[name]
                 self.logger.debug(f"COLLISION: compress {name} to {short_name}")
