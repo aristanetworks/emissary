@@ -4,7 +4,7 @@
 #
 #    pip-compile --allow-unsafe --no-build-isolation
 #
-attrs==21.4.0
+attrs==22.1.0
     # via jsonschema
 cachetools==5.0.0
     # via google-auth
