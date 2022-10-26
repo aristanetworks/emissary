@@ -100,7 +100,7 @@ websocket-client==1.2.3
     # via kubernetes
 werkzeug==2.2.1
     # via flask
-zipp==3.8.1
+zipp==3.10.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
