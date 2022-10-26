@@ -82,7 +82,7 @@ replace (
 
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/census-instrumentation/opencensus-proto v0.3.0
+	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/cncf/xds/go v0.0.0-20220121163655-4a2b9fdd466b
 	github.com/datawire/dlib v1.3.0
 	github.com/datawire/dtest v0.0.0-20210928162311-722b199c4c2f
@@ -105,8 +105,8 @@ require (
 	go.opentelemetry.io/proto/otlp v0.18.0
 	golang.org/x/mod v0.5.1
 	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418
-	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e
-	google.golang.org/grpc v1.44.0
+	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
+	google.golang.org/grpc v1.49.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -193,7 +193,7 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20220203230714-bb14e151c28f // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
