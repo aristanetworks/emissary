@@ -80,6 +80,9 @@ type Features struct {
 	// Should we enable http/1.0 protocol?
 	Http10 bool `json:"http10,omitempty"`
 
+	// Should we enable http response trailers?
+	Trailers bool `json:"trailers,omitempty"`
+
 	// Should we do IPv4 DNS lookups when contacting services? Defaults to true,
 	// but can be overridden in a [`Mapping`](/reference/mappings).
 	Ipv4Dns bool `json:"ipv4_dns,omitempty"`

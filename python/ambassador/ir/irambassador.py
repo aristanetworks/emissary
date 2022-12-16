@@ -41,6 +41,7 @@ class IRAmbassador(IRResource):
         "default_labels",
         "diagnostics",
         "enable_http10",
+        "enable_trailers",
         "enable_ipv4",
         "enable_ipv6",
         "envoy_log_format",
@@ -141,6 +142,7 @@ class IRAmbassador(IRResource):
             # comment in crd_module.go.
             use_proxy_proto=False,
             enable_http10=False,
+            enable_trailers=False,
             proper_case=False,
             prune_unreachable_routes=True,  # default True; can be updated in finalize()
             use_remote_address=use_remote_address,

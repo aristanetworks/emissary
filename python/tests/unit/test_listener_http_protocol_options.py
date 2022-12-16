@@ -48,6 +48,14 @@ def test_proper_case_and_enable_http_10():
 
 
 @pytest.mark.compilertest
+def test_proper_case_and_enable_trailers():
+    yaml = module_and_mapping_manifests(["proper_case: true", "enable_trailers: true"], [])
+    _test_listener_http_protocol_options(
+        yaml, expectations={"enable_trailers": True, "header_key_format": {"proper_case_words": {}}}
+    )
+
+
+@pytest.mark.compilertest
 def test_allow_chunked_length_false():
     yaml = module_and_mapping_manifests(["allow_chunked_length: false"], [])
     _test_listener_http_protocol_options(yaml, expectations={"allow_chunked_length": False})

@@ -493,6 +493,10 @@ class V3Listener:
             http_options = base_http_config.setdefault("http_protocol_options", {})
             http_options["accept_http_10"] = self.config.ir.ambassador_module.enable_http10
 
+        if "enable_trailers" in self.config.ir.ambassador_module:
+            http_options = base_http_config.setdefault("http_protocol_options", {})
+            http_options["enable_trailers"] = self.config.ir.ambassador_module.enable_trailers
+
         if "allow_chunked_length" in self.config.ir.ambassador_module:
             if self.config.ir.ambassador_module.allow_chunked_length != None:
                 http_options = base_http_config.setdefault("http_protocol_options", {})
