@@ -48,6 +48,7 @@ class IRAmbassador(IRResource):
         # Do not include envoy_validation_timeout; we let finalize() type-check it.
         # Do not include ip_allow or ip_deny; we let finalize() type-check them.
         "headers_with_underscores_action",
+        "http2_protocol_options",
         "keepalive",
         "listener_idle_timeout_ms",
         "liveness_probe",

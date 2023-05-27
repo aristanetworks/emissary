@@ -23,6 +23,16 @@ if TYPE_CHECKING:
     from . import V3Config  # pragma: no cover
 
 
+AllowedHttp2ProtocolOptions = frozenset(
+    [
+        "initial_connection_window_size",
+        "initial_stream_window_size",
+        "max_concurrent_streams",
+        "max_outbound_frames",
+        "max_outbound_control_frames",
+    ]
+)
+
 class V3Cluster(Cacheable):
     def __init__(self, config: "V3Config", cluster: IRCluster) -> None:
         super().__init__()
@@ -131,7 +141,7 @@ class V3Cluster(Cacheable):
         # If this cluster is using http2 for grpc, set http2_protocol_options
         # Otherwise, check for http1-specific configuration.
         if cluster.get("grpc", False):
-            self["http2_protocol_options"] = {}
+            self["http2_protocol_options"] = self.get_http2_protocol_options(cluster, config)
         else:
             proper_case: bool = cluster.ir.ambassador_module["proper_case"]
 
@@ -265,6 +275,27 @@ class V3Cluster(Cacheable):
                 circuit_breakers["thresholds"].append(threshold)
 
         return circuit_breakers
+
+    def get_http2_protocol_options(self, cluster: IRCluster, config: "V3Config"):
+        try:
+            options = {}
+            # TODO: Need to figure out where those options come from
+            # # Get possible options for a cluster
+            # opts = cluster.get("http2_protocol_options", {})
+            # for option in opts:
+            #     if option in AllowedHttp2ProtocolOptions:
+            #         options[option] = opts[option]
+
+            # Get possible default options applied globally
+            opts = config.ir.ambassador_module.get("http2_protocol_options", {})
+            for option in opts:
+                if option in AllowedHttp2ProtocolOptions and not option in options:
+                    options[option] = opts[option]
+
+            return options
+        except Exception as ex:
+            config.ir.logger.error(f"http2_protocol_options is invalid %s" % ex)
+            return {}
 
     @classmethod
     def generate(self, config: "V3Config") -> None:
