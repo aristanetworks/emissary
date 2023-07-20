@@ -108,16 +108,16 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.27.2
+	k8s.io/api v0.27.4
 	k8s.io/apiextensions-apiserver v0.27.2
-	k8s.io/apimachinery v0.27.3
+	k8s.io/apimachinery v0.27.4
 	k8s.io/cli-runtime v0.27.2
-	k8s.io/client-go v0.27.2
-	k8s.io/code-generator v0.27.2
+	k8s.io/client-go v0.27.4
+	k8s.io/code-generator v0.27.4
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
 	k8s.io/kubectl v0.27.2
 	k8s.io/kubernetes v1.27.2
-	k8s.io/metrics v0.27.2
+	k8s.io/metrics v0.27.4
 	sigs.k8s.io/controller-runtime v0.15.0
 	sigs.k8s.io/controller-tools v0.12.0
 	sigs.k8s.io/gateway-api v0.2.0
