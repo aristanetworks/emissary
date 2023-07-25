@@ -85,7 +85,7 @@ require (
 	github.com/datawire/dlib v1.3.0
 	github.com/datawire/dtest v0.0.0-20210928162311-722b199c4c2f
 	github.com/datawire/go-mkopensource v0.0.10-0.20230523185412-ce8a269623cd
-	github.com/envoyproxy/protoc-gen-validate v0.10.1
+	github.com/envoyproxy/protoc-gen-validate v1.0.2
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/golang/protobuf v1.5.3
 	github.com/google/go-cmp v0.5.9
@@ -101,11 +101,10 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/proto/otlp v0.19.0
-	golang.org/x/mod v0.10.0
+	golang.org/x/mod v0.11.0
 	golang.org/x/sys v0.10.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20230629202037-9506855d4529
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98
-	google.golang.org/grpc v1.56.2
+	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6
+	google.golang.org/grpc v1.53.0-dev
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -210,9 +209,8 @@ require (
 	golang.org/x/term v0.10.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.9.1 // indirect
+	golang.org/x/tools v0.10.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
