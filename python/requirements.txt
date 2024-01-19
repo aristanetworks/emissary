@@ -24,7 +24,7 @@ durationpy==0.5
     # via -r requirements.in
 expiringdict==1.2.2
     # via -r requirements.in
-flask==3.0.0
+flask==3.0.1
     # via -r requirements.in
 google-auth==2.23.2
     # via kubernetes
