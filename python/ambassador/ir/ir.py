@@ -1148,6 +1148,7 @@ class IR:
             "use_remote_address",
             "x_forwarded_proto_redirect",
             "enable_http10",
+            "enable_trailers",
             "add_linkerd_headers",
             "use_ambassador_namespace_for_service_resolution",
             "proper_case",
