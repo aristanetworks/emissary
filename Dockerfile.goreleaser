@@ -4,7 +4,7 @@
 
 ######## Envoy
 
-FROM envoyproxy/envoy:distroless-v1.29.3 as envoy-factory
+FROM envoyproxy/envoy:distroless-v1.31.0 as envoy-factory
 # Repeat after every FROM line, sigh.
 ARG TARGETARCH
 ARG LIBARCH
@@ -83,7 +83,7 @@ COPY --from=emissary-factory /lib/${LIBARCH}-linux-gnu/libexpat* /lib/${LIBARCH}
 
 # Things very helpful for debugging etc.
 COPY --from=emissary-factory \
-    /bin/echo /bin/ln /bin/rm /bin/sh /bin/chmod \
+    /bin/echo /bin/ln /bin/rm /bin/sh /bin/chmod /bin/ls /bin/cat \
     /bin/
 
 # Copy Emissary stuff
