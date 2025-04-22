@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText:
 # SPDX-License-Identifier: Apache-2.0
 
-version: 1
+version: 2
 
 # Allow overriding the registry and image name with environment variables.
 env:
