@@ -4,21 +4,21 @@
 
 ######## Envoy
 
-FROM envoyproxy/envoy:distroless-v1.31.0 as envoy-factory
+FROM envoyproxy/envoy:distroless-v1.34.0 as envoy-factory
 # Repeat after every FROM line, sigh.
 ARG TARGETARCH
 ARG LIBARCH
 
 ######## Python
 
-# We use the Python 3.12.2-slim-bookworm image to manage Emissary's
+# We use the Python 3.12.10-slim-bookworm image to manage Emissary's
 # Python half, then replicate some of the Google distroless Python image
 # ourselves, based on https://github.com/alexdmoss/distroless-python
 # (we'd use that directly, but its published images aren't multi-arch).
 #
 # We don't use Google's distroless image directly because its Python
 # version is older than we want.
-FROM python:3.12.2-slim-bookworm as emissary-factory
+FROM python:3.12.10-slim-bookworm as emissary-factory
 # Repeat after every FROM line, sigh.
 ARG TARGETARCH
 ARG LIBARCH
@@ -60,7 +60,8 @@ RUN mkdir -p /ambassador/sidecars
 
 ######## Distroless final stage
 
-FROM gcr.io/distroless/cc-debian12 as final
+# Debug image to include a shell
+FROM gcr.io/distroless/cc-debian12:debug as final
 # Repeat after every FROM line, sigh.
 ARG TARGETARCH
 ARG LIBARCH
@@ -83,7 +84,7 @@ COPY --from=emissary-factory /lib/${LIBARCH}-linux-gnu/libexpat* /lib/${LIBARCH}
 
 # Things very helpful for debugging etc.
 COPY --from=emissary-factory \
-    /bin/echo /bin/ln /bin/rm /bin/sh /bin/chmod /bin/ls /bin/cat \
+    /bin/echo /bin/ln /bin/rm /bin/sh /bin/chmod \
     /bin/
 
 # Copy Emissary stuff
