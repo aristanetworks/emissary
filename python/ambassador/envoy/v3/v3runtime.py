@@ -85,6 +85,19 @@ class V3Runtime(dict):
                         f"value: {use_rapid_reset_goaway} is invalid for Module field envoy.restart_features.send_goaway_for_premature_rst_streams. This field must be true/false"
                     )
 
+            http2_use_oghttp2 = user_runtime.get(
+                "envoy.reloadable_features.http2_use_oghttp2", None
+            )
+            if http2_use_oghttp2:
+                if isinstance(http2_use_oghttp2, bool):
+                    static_runtime_layer["envoy.reloadable_features.http2_use_oghttp2"] = (
+                        http2_use_oghttp2
+                    )
+                else:
+                    config.ir.logger.error(
+                        f"value: {http2_use_oghttp2} is invalid for Module field runtime_flags.http2_use_oghttp2. This field must be true/false"
+                    )
+
         self.update({"layers": [{"name": "static_layer", "static_layer": static_runtime_layer}]})
 
     @classmethod
