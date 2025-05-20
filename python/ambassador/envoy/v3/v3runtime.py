@@ -35,7 +35,7 @@ class V3Runtime(dict):
         user_runtime = config.ir.ambassador_module.get("runtime_flags", None)
         if user_runtime:
             max_io_per_cycle = user_runtime.get("http.max_requests_per_io_cycle", None)
-            if max_io_per_cycle:
+            if max_io_per_cycle is not None:
                 if isinstance(max_io_per_cycle, int) and max_io_per_cycle > 0:
                     static_runtime_layer["http.max_requests_per_io_cycle"] = max_io_per_cycle
                 else:
@@ -46,14 +46,14 @@ class V3Runtime(dict):
             rapid_reset_min_stream_lifetime = user_runtime.get(
                 "overload.premature_reset_min_stream_lifetime_seconds", None
             )
-            if rapid_reset_min_stream_lifetime:
+            if rapid_reset_min_stream_lifetime is not None:
                 if (
                     isinstance(rapid_reset_min_stream_lifetime, int)
                     and rapid_reset_min_stream_lifetime > 0
                 ):
-                    static_runtime_layer[
-                        "overload.premature_reset_min_stream_lifetime_seconds"
-                    ] = rapid_reset_min_stream_lifetime
+                    static_runtime_layer["overload.premature_reset_min_stream_lifetime_seconds"] = (
+                        rapid_reset_min_stream_lifetime
+                    )
                 else:
                     config.ir.logger.error(
                         f"value: {rapid_reset_min_stream_lifetime} is invalid for Module field overload.premature_reset_min_stream_lifetime_seconds. must be an integer greater than zero"
@@ -62,11 +62,11 @@ class V3Runtime(dict):
             rapid_reset_total_streams = user_runtime.get(
                 "overload.premature_reset_total_stream_count", None
             )
-            if rapid_reset_total_streams:
+            if rapid_reset_total_streams is not None:
                 if isinstance(rapid_reset_total_streams, int) and rapid_reset_total_streams > 0:
-                    static_runtime_layer[
-                        "overload.premature_reset_total_stream_count"
-                    ] = rapid_reset_total_streams
+                    static_runtime_layer["overload.premature_reset_total_stream_count"] = (
+                        rapid_reset_total_streams
+                    )
                 else:
                     config.ir.logger.error(
                         f"value: {rapid_reset_total_streams} invalid for Module field overload.premature_reset_total_stream_count. must be an integer greater than zero"
@@ -75,7 +75,7 @@ class V3Runtime(dict):
             use_rapid_reset_goaway = user_runtime.get(
                 "envoy.restart_features.send_goaway_for_premature_rst_streams", None
             )
-            if use_rapid_reset_goaway:
+            if use_rapid_reset_goaway is not None:
                 if isinstance(rapid_reset_total_streams, bool):
                     static_runtime_layer[
                         "envoy.restart_features.send_goaway_for_premature_rst_streams"
@@ -88,7 +88,7 @@ class V3Runtime(dict):
             http2_use_oghttp2 = user_runtime.get(
                 "envoy.reloadable_features.http2_use_oghttp2", None
             )
-            if http2_use_oghttp2:
+            if http2_use_oghttp2 is not None:
                 if isinstance(http2_use_oghttp2, bool):
                     static_runtime_layer["envoy.reloadable_features.http2_use_oghttp2"] = (
                         http2_use_oghttp2
