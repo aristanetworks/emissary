@@ -76,7 +76,7 @@ class V3Runtime(dict):
                 "envoy.restart_features.send_goaway_for_premature_rst_streams", None
             )
             if use_rapid_reset_goaway is not None:
-                if isinstance(rapid_reset_total_streams, bool):
+                if isinstance(use_rapid_reset_goaway, bool):
                     static_runtime_layer[
                         "envoy.restart_features.send_goaway_for_premature_rst_streams"
                     ] = use_rapid_reset_goaway
