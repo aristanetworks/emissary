@@ -206,6 +206,11 @@ def V3HTTPFilter_authv1(auth: IRAuth, v3config: "V3Config"):
         if "allow_partial" in raw_body_info:
             body_info["allow_partial_message"] = raw_body_info["allow_partial"]
 
+    headers_to_add = [{"key": k, "value": v} for k, v in auth.get("add_auth_headers", {}).items()]
+    if auth.get("add_linkerd_headers", False):
+        svc = Service(auth.ir.logger, auth_cluster_uri(auth, cluster))
+        headers_to_add.append({"key": "l5d-dst-override", "value": svc.hostname_port})
+
     auth_info: Dict[str, Any] = {}
 
     if errors := auth.ir.aconf.errors.get(auth.rkey):
@@ -246,27 +251,8 @@ end
 
     elif auth.proto == "http":
         allowed_authorization_headers = []
-        headers_to_add = []
-
-        for k, v in auth.get("add_auth_headers", {}).items():
-            headers_to_add.append(
-                {
-                    "key": k,
-                    "value": v,
-                }
-            )
-
         for key in list(set(auth.allowed_authorization_headers).union(AllowedAuthorizationHeaders)):
             allowed_authorization_headers.append({"exact": key, "ignore_case": True})
-
-        allowed_request_headers = []
-
-        for key in list(set(auth.allowed_request_headers).union(AllowedRequestHeaders)):
-            allowed_request_headers.append({"exact": key, "ignore_case": True})
-
-        if auth.get("add_linkerd_headers", False):
-            svc = Service(auth.ir.logger, auth_cluster_uri(auth, cluster))
-            headers_to_add.append({"key": "l5d-dst-override", "value": svc.hostname_port})
 
         auth_info = {
             "name": "envoy.filters.http.ext_authz",
@@ -280,9 +266,6 @@ end
                     },
                     "path_prefix": auth.path_prefix,
                     "authorization_request": {
-                        "allowed_headers": {
-                            "patterns": sorted(allowed_request_headers, key=header_pattern_key)
-                        },
                         "headers_to_add": headers_to_add,
                     },
                     "authorization_response": {
@@ -309,6 +292,7 @@ end
                 "grpc_service": {
                     "envoy_grpc": {"cluster_name": cluster.envoy_name},
                     "timeout": "%0.3fs" % (float(auth.timeout_ms) / 1000.0),
+                    "initial_metadata": headers_to_add,
                 },
                 "transport_api_version": auth.protocol_version.upper(),
             },
@@ -328,6 +312,12 @@ end
         if "status_on_error" in auth:
             status_on_error: Optional[Dict[str, int]] = auth.get("status_on_error")
             auth_info["typed_config"]["status_on_error"] = status_on_error
+
+        allowed_request_headers = []
+        for key in list(set(auth.allowed_request_headers).union(AllowedRequestHeaders)):
+            allowed_request_headers.append({"exact": key, "ignore_case": True})
+
+        auth_info["typed_config"]["allowed_headers"] = {"patterns": allowed_request_headers}
 
     return auth_info
 
