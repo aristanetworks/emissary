@@ -31,6 +31,7 @@ import t_logservice
 import t_lua_scripts
 import t_mappingtests_default  # mapping tests executed in the default namespace
 import t_max_req_header_kb
+import t_max_concurrent_streams
 import t_no_ui
 import t_plain  # t_plain include t_mappingtests_plain and t_optiontests as imports; these tests require each other and need to be executed as a set
 import t_queryparameter_routing

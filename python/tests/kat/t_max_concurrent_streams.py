@@ -20,7 +20,7 @@ kind: Module
 name: ambassador
 ambassador_id: [{self.ambassador_id}]
 config:
-  max_concurrent_streams: 30
+  max_concurrent_streams: 100
 """
         )
         yield self, self.format(
@@ -28,28 +28,26 @@ config:
 ---
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
-name:  {self.name}
+name:  config__dump
 hostname: "*"
-prefix: /target/
-service: http://{self.target.path.fqdn}
+prefix: /config_dump
+rewrite: /config_dump
+service: http://127.0.0.1:8001
 """
         )
 
     def queries(self):
-        h1 = "i" * (31 * 1024)
-        yield Query(self.url("target/"), expected=431, headers={"big": h1})
-        h2 = "i" * (29 * 1024)
-        yield Query(self.url("target/"), expected=200, headers={"small": h2})
+        yield Query(self.url("config_dump"), phase=2)
 
     def check(self):
-        expected_val = "3600s"
-        actual_val = ""
+        expected_val = 100
+        actual_val = -1
         assert self.results[0].body
         body = json.loads(self.results[0].body)
         for config_obj in body.get("configs"):
             if config_obj.get("@type") == "type.googleapis.com/envoy.admin.v3.ListenersConfigDump":
                 listeners = config_obj.get("dynamic_listeners")
-                found_max_conn_duration = False
+                found_max_concurrent_streams = False
                 for listener_obj in listeners:
                     listener = listener_obj.get("active_state").get("listener")
                     filter_chains = listener.get("filter_chains")
@@ -60,26 +58,26 @@ service: http://{self.target.path.fqdn}
                                 == "envoy.filters.network.http_connection_manager"
                             ):
                                 filter_config = filter.get("typed_config")
-                                common_http_protocol_options = filter_config.get(
-                                    "common_http_protocol_options"
+                                http2_protocol_options = filter_config.get(
+                                    "http2_protocol_options"
                                 )
-                                if common_http_protocol_options:
-                                    actual_val = common_http_protocol_options.get(
-                                        "max_connection_duration", ""
+                                if http2_protocol_options:
+                                    actual_val = http2_protocol_options.get(
+                                        "max_concurrent_streams", ""
                                     )
                                     if actual_val != "":
                                         if actual_val == expected_val:
-                                            found_max_conn_duration = True
+                                            found_max_concurrent_streams = True
                                     else:
                                         assert (
                                             False
-                                        ), "Expected to find common_http_protocol_options.max_connection_duration property on listener"
+                                        ), "Expected to find http2_protocol_options.max_concurrent_streams property on listener"
                                 else:
                                     assert (
                                         False
-                                    ), "Expected to find common_http_protocol_options property on listener"
+                                    ), "Expected to find http2_protocol_options property on listener"
                 assert (
-                    found_max_conn_duration
-                ), "Expected common_http_protocol_options.max_connection_duration = {}, Got common_http_protocol_options.max_connection_duration = {}".format(
+                    found_max_concurrent_streams
+                ), "Expected http2_protocol_options.max_concurrent_streams = {}, Got http2_protocol_options.max_concurrent_streams = {}".format(
                     expected_val, actual_val
                 )
