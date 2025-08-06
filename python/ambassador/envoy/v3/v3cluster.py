@@ -131,7 +131,18 @@ class V3Cluster(Cacheable):
         # If this cluster is using http2 for grpc, set http2_protocol_options
         # Otherwise, check for http1-specific configuration.
         if cluster.get("grpc", False):
-            self["http2_protocol_options"] = {}
+            tmp = {}
+            initial_stream_window_size = cluster.ir.ambassador_module.get(
+                "upstream_initial_stream_window_size", None
+            )
+            initial_connection_window_size = cluster.ir.ambassador_module.get(
+                "upstream_initial_connection_window_size", None
+            )
+            if initial_stream_window_size:
+                tmp["initial_stream_window_size"] = initial_stream_window_size
+            if initial_connection_window_size:
+                tmp["initial_connection_window_size"] = initial_connection_window_size
+            self["http2_protocol_options"] = tmp
         else:
             proper_case: bool = cluster.ir.ambassador_module["proper_case"]
 
