@@ -37,6 +37,8 @@ class IRAmbassador(IRResource):
         "default_label_domain",
         "default_labels",
         "diagnostics",
+        "downstream_initial_connection_window_size",
+        "downstream_initial_stream_window_size",
         "enable_http10",
         "enable_ipv4",
         "enable_ipv6",
@@ -71,6 +73,8 @@ class IRAmbassador(IRResource):
         "statsd",
         "strip_matching_host_port",
         "suppress_envoy_headers",
+        "upstream_initial_connection_window_size",
+        "upstream_initial_stream_window_size",
         "use_ambassador_namespace_for_service_resolution",
         "use_proxy_proto",
         "use_remote_address",
@@ -153,6 +157,10 @@ class IRAmbassador(IRResource):
             preserve_external_request_id=False,
             max_concurrent_streams=None,
             max_request_headers_kb=None,
+            upstream_initial_connection_window_size=None,
+            upstream_initial_stream_window_size=None,
+            downstream_initial_connection_window_size=None,
+            downstream_initial_stream_window_size=None,
             **kwargs,
         )
 

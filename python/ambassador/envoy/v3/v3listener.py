@@ -544,6 +544,28 @@ class V3Listener:
                     "max_concurrent_streams": max_concurrent_streams
                 }
 
+        initial_stream_window_size = self.config.ir.ambassador_module.get(
+            "downstream_initial_stream_window_size", None
+        )
+        if initial_stream_window_size:
+            if "http2_protocol_options" in base_http_config:
+                base_http_config["http2_protocol_options"]["initial_stream_window_size"] = initial_stream_window_size
+            else:
+                base_http_config["http2_protocol_options"] = {
+                    "initial_stream_window_size": initial_stream_window_size
+                }
+
+        initial_connection_window_size = self.config.ir.ambassador_module.get(
+            "downstream_initial_connection_window_size", None
+        )
+        if initial_connection_window_size:
+            if "http2_protocol_options" in base_http_config:
+                base_http_config["http2_protocol_options"]["initial_connection_window_size"] = initial_connection_window_size
+            else:
+                base_http_config["http2_protocol_options"] = {
+                    "initial_connection_window_size": initial_connection_window_size
+                }
+
         max_request_headers_kb = self.config.ir.ambassador_module.get(
             "max_request_headers_kb", None
         )
