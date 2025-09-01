@@ -1011,6 +1011,28 @@ class V3Listener(dict):
             else:
                 self.base_http_config["common_http_protocol_options"] = { 'headers_with_underscores_action': self.config.ir.ambassador_module.headers_with_underscores_action }
 
+        initial_stream_window_size = self.config.ir.ambassador_module.get(
+            "downstream_initial_stream_window_size", None
+        )
+        if initial_stream_window_size:
+            if "http2_protocol_options" in self.base_http_config:
+                self.base_http_config["http2_protocol_options"]["initial_stream_window_size"] = initial_stream_window_size
+            else:
+                self.base_http_config["http2_protocol_options"] = {
+                    "initial_stream_window_size": initial_stream_window_size
+                }
+
+        initial_connection_window_size = self.config.ir.ambassador_module.get(
+            "downstream_initial_connection_window_size", None
+        )
+        if initial_connection_window_size:
+            if "http2_protocol_options" in self.base_http_config:
+                self.base_http_config["http2_protocol_options"]["initial_connection_window_size"] = initial_connection_window_size
+            else:
+                self.base_http_config["http2_protocol_options"] = {
+                    "initial_connection_window_size": initial_connection_window_size
+                }
+
         max_request_headers_kb = self.config.ir.ambassador_module.get('max_request_headers_kb', None)
         if max_request_headers_kb:
             self.base_http_config["max_request_headers_kb"] = max_request_headers_kb

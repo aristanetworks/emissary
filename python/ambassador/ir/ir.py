@@ -929,6 +929,15 @@ class IR:
 
         od['allow_chunked_length'] = self.ambassador_module.get('allow_chunked_length', None)
 
+        od["upstream_initial_stream_window_size"] = self.ambassador_module.get(
+            "upstream_initial_stream_window_size", None)
+        od["upstream_initial_connection_window_size"] = self.ambassador_module.get(
+            "upstream_initial_connection_window_size", None)
+        od["downstream_initial_stream_window_size"] = self.ambassador_module.get(
+            "downstream_initial_stream_window_size", None)
+        od["downstream_initial_connection_window_size"] = self.ambassador_module.get(
+            "downstream_initial_connection_window_size", None)
+
         cluster_count = 0
         cluster_grpc_count = 0      # clusters using GRPC upstream
         cluster_http_count = 0      # clusters using HTTP or HTTPS upstream
