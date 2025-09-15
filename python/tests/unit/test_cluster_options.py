@@ -82,3 +82,50 @@ def test_dns_ttl_mapping():
     yaml = module_and_mapping_manifests(None, None)
     # The dns type is listed as just "type"
     _test_cluster_setting(yaml, setting="respect_dns_ttl", expected=False, exists=False)
+
+
+@pytest.mark.compilertest
+def test_healthy_panic_threshold():
+    # Test healthy_panic_threshold is configured correctly
+    yaml = module_and_mapping_manifests(None, [
+        "resolver: endpoint",
+        "load_balancer:",
+        "  policy: round_robin",
+        "  healthy_panic_threshold: 25.0"
+    ])
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 25.0}}, exists=True)
+
+
+@pytest.mark.compilertest
+def test_healthy_panic_threshold_zero():
+    # Test healthy_panic_threshold with 0% (disable panic mode)
+    yaml = module_and_mapping_manifests(None, [
+        "resolver: endpoint",
+        "load_balancer:",
+        "  policy: round_robin",
+        "  healthy_panic_threshold: 0.0"
+    ])
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 0.0}}, exists=True)
+
+
+@pytest.mark.compilertest
+def test_healthy_panic_threshold_hundred():
+    # Test healthy_panic_threshold with 100%
+    yaml = module_and_mapping_manifests(None, [
+        "resolver: endpoint",
+        "load_balancer:",
+        "  policy: round_robin",
+        "  healthy_panic_threshold: 100.0"
+    ])
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 100.0}}, exists=True)
+
+
+@pytest.mark.compilertest
+def test_healthy_panic_threshold_not_set():
+    # Test that common_lb_config is not set when healthy_panic_threshold is not specified
+    yaml = module_and_mapping_manifests(None, [
+        "resolver: endpoint",
+        "load_balancer:",
+        "  policy: round_robin"
+    ])
+    _test_cluster_setting(yaml, setting="common_lb_config", expected=False, exists=False)

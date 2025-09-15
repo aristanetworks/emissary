@@ -145,6 +145,17 @@ load_balancer:
   policy: least_request
   cookie:
     name: test-cookie
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+name:  {self.name}-10
+hostname: "*"
+prefix: /{self.name}-10/
+service: {self.target.path.fqdn}
+resolver: endpoint
+load_balancer:
+  policy: round_robin
+  healthy_panic_threshold: 25.0
 """
         )
 
@@ -159,6 +170,7 @@ load_balancer:
         yield Query(self.url(self.name + "-7/"), expected=404)
         yield Query(self.url(self.name + "-8/"))
         yield Query(self.url(self.name + "-9/"), expected=404)
+        yield Query(self.url(self.name + "-10/"))
 
 
 class GlobalLoadBalancing(AmbassadorTest):
