@@ -66,11 +66,9 @@ load_balancer:
         yield Query(self.url(self.name + "-100percent/"))
 
     def check(self):
-        # Basic functionality test - all requests should succeed
         for result in self.results:
             assert result.status == 200
 
     def requirements(self):
-        # We need to check the Envoy configuration to verify the healthy_panic_threshold is set correctly
         yield ("url", Query(self.url("ambassador/v0/diag/?json=true&filter=errors")))
         yield ("url", Query(self.url("ambassador/v0/diag/?json=true&filter=clusters")))
