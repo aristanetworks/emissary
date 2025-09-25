@@ -301,7 +301,7 @@ type LoadBalancer struct {
 	Cookie                *LoadBalancerCookie `json:"cookie,omitempty"`
 	Header                string              `json:"header,omitempty"`
 	SourceIp              *bool               `json:"source_ip,omitempty"`
-	HealthyPanicThreshold *float64            `json:"healthy_panic_threshold,omitempty"`
+	HealthyPanicThreshold *Percent            `json:"healthy_panic_threshold,omitempty"`
 }
 
 type LoadBalancerCookie struct {
