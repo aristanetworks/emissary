@@ -517,7 +517,7 @@ class V3Listener:
                 }
 
         max_concurrent_streams = self.config.ir.ambassador_module.get(
-            "max_concurrent_streams", None
+            "downstream_max_concurrent_streams", None
         )
         if max_concurrent_streams:
             if "http2_protocol_options" in base_http_config:

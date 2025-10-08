@@ -42,7 +42,7 @@ metadata:
   namespace: default
 spec:
   config:
-    max_concurrent_streams: 96
+    downstream_max_concurrent_streams: 96
 ---
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping

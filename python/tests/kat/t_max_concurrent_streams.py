@@ -20,7 +20,7 @@ kind: Module
 name: ambassador
 ambassador_id: [{self.ambassador_id}]
 config:
-  max_concurrent_streams: 100
+  downstream_max_concurrent_streams: 100
 """
         )
         yield self, self.format(
