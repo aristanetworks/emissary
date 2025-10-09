@@ -32,7 +32,7 @@ def _get_envoy_config(yaml):
     return EnvoyConfig.generate(ir)
 
 @pytest.mark.compilertest
-def test_max_concurrent_streams_v3():
+def test_downstream_max_concurrent_streams_v3():
     yaml = """
 ---
 apiVersion: getambassador.io/v3alpha1
@@ -75,3 +75,46 @@ spec:
                 ), "max_concurrent_streams must equal the value set on the ambassador Module"
     assert key_found, "max_concurrent_streams must be found in the envoy config"
 
+
+@pytest.mark.compilertest
+def test_upstream_max_concurrent_streams_v3():
+    yaml = """
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Module
+metadata:
+  name: ambassador
+  namespace: default
+spec:
+  config:
+    upstream_max_concurrent_streams: 200
+---
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: grpc-service
+  namespace: default
+spec:
+  hostname: "*"
+  prefix: /grpc/
+  service: grpc-service:9999
+  grpc: true
+"""
+    econf = _get_envoy_config(yaml)
+    expected = 200
+    key_found = False
+
+    conf = econf.as_dict()
+
+    # Check upstream (cluster) configuration
+    for cluster in conf["static_resources"]["clusters"]:
+        if cluster.get("http2_protocol_options"):
+            max_concurrent_streams = cluster["http2_protocol_options"].get("max_concurrent_streams", None)
+            if max_concurrent_streams is not None:
+                print(f"Found upstream max_concurrent_streams = {max_concurrent_streams}")
+                key_found = True
+                assert expected == int(
+                    max_concurrent_streams
+                ), "upstream max_concurrent_streams must equal the value set on the ambassador Module"
+
+    assert key_found, "upstream max_concurrent_streams must be found in the envoy config"

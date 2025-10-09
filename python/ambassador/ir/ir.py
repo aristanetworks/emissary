@@ -1167,6 +1167,8 @@ class IR:
             "upstream_initial_stream_window_size", None)
         od["upstream_initial_connection_window_size"] = self.ambassador_module.get(
             "upstream_initial_connection_window_size", None)
+        od["upstream_max_concurrent_streams"] = self.ambassador_module.get(
+            "upstream_max_concurrent_streams", None)
         od["downstream_initial_stream_window_size"] = self.ambassador_module.get(
             "downstream_initial_stream_window_size", None)
         od["downstream_initial_connection_window_size"] = self.ambassador_module.get(
