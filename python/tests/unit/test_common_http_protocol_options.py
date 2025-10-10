@@ -130,7 +130,7 @@ def test_both_one_module_one_mapping():
 @pytest.mark.compilertest
 def test_max_concurrent_streams():
     yaml = module_and_mapping_manifests(
-        None, ["max_concurrent_streams: 100"]
+        None, ["grpc: true", "max_concurrent_streams: 100"]
     )
     _test_http2_protocol_options(
         yaml, expectations={"max_concurrent_streams": "100"}

@@ -21,8 +21,8 @@ name: mapping-max-concurrent-streams
 hostname: "*"
 prefix: /test-mapping-streams/
 service: {self.target.path.fqdn}
-http2_protocol_options:
-    max_concurrent_streams: 42
+grpc: true
+max_concurrent_streams: 42
 """
         )
         yield self, self.format(
