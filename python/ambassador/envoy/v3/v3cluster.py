@@ -124,6 +124,16 @@ class V3Cluster(Cacheable):
                 float(cluster_max_connection_lifetime_ms) / 1000.0
             )
 
+        if cluster.max_concurrent_streams:
+            max_concurrent_streams = cluster.max_concurrent_streams
+        else:
+            max_concurrent_streams = cluster.ir.ambassador_module.get(
+                "max_concurrent_streams", None
+            )
+        if max_concurrent_streams:
+            common_http_options = self.setdefault("common_http_protocol_options", {})
+            common_http_options["max_concurrent_streams"] = str(max_concurrent_streams)
+
         circuit_breakers = self.get_circuit_breakers(cluster)
         if circuit_breakers is not None:
             fields["circuit_breakers"] = circuit_breakers

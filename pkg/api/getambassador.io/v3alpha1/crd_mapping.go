@@ -75,6 +75,7 @@ type MappingSpec struct {
 	ConnectTimeout               *MillisecondDuration `json:"connect_timeout_ms,omitempty"`
 	ClusterIdleTimeout           *MillisecondDuration `json:"cluster_idle_timeout_ms,omitempty"`
 	ClusterMaxConnectionLifetime *MillisecondDuration `json:"cluster_max_connection_lifetime_ms,omitempty"`
+	MaxConcurrentStreams         *int                 `json:"max_concurrent_streams,omitempty"`
 	// The timeout for requests that use this Mapping. Overrides `cluster_request_timeout_ms` set on the Ambassador Module, if it exists.
 	Timeout     *MillisecondDuration `json:"timeout_ms,omitempty"`
 	IdleTimeout *MillisecondDuration `json:"idle_timeout_ms,omitempty"`

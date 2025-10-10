@@ -103,6 +103,7 @@ class IRHTTPMapping(IRBaseMapping):
         "keepalive": False,
         "labels": False,  # Not supported in v0; requires v1+; handled in setup
         "load_balancer": False,
+        "max_concurrent_streams": False,
         "metadata_labels": False,
         # Do not include method
         "method_regex": False,

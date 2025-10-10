@@ -48,6 +48,7 @@ class IRCluster(IRResource):
         connect_timeout_ms: Optional[int] = 3000,
         cluster_idle_timeout_ms: Optional[int] = None,
         cluster_max_connection_lifetime_ms: Optional[int] = None,
+        max_concurrent_streams: Optional[int] = None,
         marker: Optional[str] = None,  # extra marker for this context name
         stats_name: Optional[str] = None,  # Override the stats name for this cluster
         ctx_name: Optional[Union[str, bool]] = None,
@@ -307,6 +308,7 @@ class IRCluster(IRResource):
             "connect_timeout_ms": connect_timeout_ms,
             "cluster_idle_timeout_ms": cluster_idle_timeout_ms,
             "cluster_max_connection_lifetime_ms": cluster_max_connection_lifetime_ms,
+            "max_concurrent_streams": max_concurrent_streams,
             "respect_dns_ttl": respect_dns_ttl,
             "health_checks": health_checks,
         }
@@ -421,6 +423,7 @@ class IRCluster(IRResource):
             "connect_timeout_ms",
             "cluster_idle_timeout_ms",
             "cluster_max_connection_lifetime_ms",
+            "max_concurrent_streams",
         ]:
             if self.get(key, None) != other.get(key, None):
                 mismatches.append(key)

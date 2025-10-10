@@ -288,6 +288,7 @@ class IRHTTPMappingGroup(IRBaseMappingGroup):
                 cluster_max_connection_lifetime_ms=mapping.get(
                     "cluster_max_connection_lifetime_ms", None
                 ),
+                max_concurrent_streams=mapping.get("max_concurrent_streams", None),
                 circuit_breakers=mapping.get("circuit_breakers", None),
                 marker=marker,
                 stats_name=mapping.get("stats_name"),
