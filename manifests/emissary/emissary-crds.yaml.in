@@ -3656,6 +3656,8 @@ spec:
                 required:
                 - policy
                 type: object
+              max_concurrent_streams:
+                type: integer
               method:
                 type: string
               method_regex:

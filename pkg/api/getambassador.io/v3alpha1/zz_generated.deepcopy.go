@@ -2064,6 +2064,11 @@ func (in *MappingSpec) DeepCopyInto(out *MappingSpec) {
 		*out = new(MillisecondDuration)
 		**out = **in
 	}
+	if in.MaxConcurrentStreams != nil {
+		in, out := &in.MaxConcurrentStreams, &out.MaxConcurrentStreams
+		*out = new(int)
+		**out = **in
+	}
 	if in.Timeout != nil {
 		in, out := &in.Timeout, &out.Timeout
 		*out = new(MillisecondDuration)

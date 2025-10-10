@@ -4241,6 +4241,7 @@ func autoConvert_v3alpha1_MappingSpec_To_v2_MappingSpec(in *v3alpha1.MappingSpec
 			}
 		}
 	}
+	// WARNING: in.MaxConcurrentStreams requires manual conversion: does not exist in peer-type
 	if true {
 		in, out := &in.Timeout, &out.Timeout
 		if *in == nil {
