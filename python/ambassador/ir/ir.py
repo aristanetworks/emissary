@@ -1163,16 +1163,18 @@ class IR:
         od["headers_with_underscores_action"] = self.ambassador_module.get(
             "headers_with_underscores_action", None
         )
-        od["max_concurrent_streams"] = self.ambassador_module.get(
-            "max_concurrent_streams", None)
         od["upstream_initial_stream_window_size"] = self.ambassador_module.get(
             "upstream_initial_stream_window_size", None)
         od["upstream_initial_connection_window_size"] = self.ambassador_module.get(
             "upstream_initial_connection_window_size", None)
+        od["upstream_max_concurrent_streams"] = self.ambassador_module.get(
+            "upstream_max_concurrent_streams", None)
         od["downstream_initial_stream_window_size"] = self.ambassador_module.get(
             "downstream_initial_stream_window_size", None)
         od["downstream_initial_connection_window_size"] = self.ambassador_module.get(
             "downstream_initial_connection_window_size", None)
+        od["downstream_max_concurrent_streams"] = self.ambassador_module.get(
+            "downstream_max_concurrent_streams", None)
         od["max_request_headers_kb"] = self.ambassador_module.get("max_request_headers_kb", None)
 
         od["server_name"] = bool(self.ambassador_module.server_name != "envoy")

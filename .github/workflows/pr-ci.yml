@@ -1,0 +1,110 @@
+name: PR CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - master
+      - dev/*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-unit-tests:
+    name: Python Unit Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        uses: ./.github/actions/setup-deps
+
+      - name: Create Python Virtual Environment
+        run: |
+          python3 -m venv venv
+          venv/bin/pip3 install -r python/requirements.txt
+          venv/bin/pip3 install -r python/requirements-dev.txt
+          venv/bin/pip3 install -e python
+
+      - name: Run Python Unit Tests
+        run: |
+          . venv/bin/activate
+          pytest --tb=short -rP python/tests/unit
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Create Python Virtual Environment
+        run: |
+          python3 -m venv venv
+          venv/bin/pip3 install -r python/requirements.txt
+          venv/bin/pip3 install -e python
+
+      - name: Verify Python Package
+        run: |
+          . venv/bin/activate
+          python -c "import ambassador; print('Ambassador package imported successfully')"
+
+  generate-check:
+    name: Check Generated Files
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        uses: ./.github/actions/setup-deps
+
+      - name: Run Generate (Fast)
+        run: make generate-fast
+        continue-on-error: true
+
+      - name: Check for Changes
+        run: |
+          git add .
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "Generated files are out of date. Please run 'make generate-fast' and commit the changes."
+            git diff --cached
+            exit 1
+          fi
+
+  summary:
+    name: CI Summary
+    needs: [python-unit-tests, build, generate-check]
+    runs-on: ubuntu-24.04
+    if: always()
+    steps:
+      - name: Check Results
+        run: |
+          echo "Python Unit Tests: ${{ needs.python-unit-tests.result }}"
+          echo "Build Check: ${{ needs.build.result }}"
+          echo "Generate Check: ${{ needs.generate-check.result }}"
+
+          if [[ "${{ needs.python-unit-tests.result }}" != "success" ]] || \
+             [[ "${{ needs.build.result }}" != "success" ]] || \
+             [[ "${{ needs.generate-check.result }}" != "success" ]]; then
+            echo "Some required checks failed"
+            exit 1
+          fi
+
+          echo "All required checks passed!"

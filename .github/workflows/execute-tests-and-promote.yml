@@ -1,11 +1,12 @@
 name: job-promote-to-passed
 
 "on":
-  push:
-    branches:
-      - master
-      - release/v*
-  pull_request: {}
+  # Disabled for fork - using simplified pr-ci.yml instead
+  # push:
+  #   branches:
+  #     - master
+  #     - release/v*
+  # pull_request: {}
   workflow_dispatch:
 
 jobs:

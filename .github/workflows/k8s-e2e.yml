@@ -1,7 +1,8 @@
 name: k8s-e2e
 
 "on":
-  pull_request: {}
+  # Disabled for fork - using simplified pr-ci.yml instead
+  # pull_request: {}
   schedule:
     - cron: "0 7 * * *" # at 7am UTC everyday
   workflow_dispatch:
