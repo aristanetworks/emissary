@@ -5,7 +5,7 @@ from tests.utils import econf_compile, econf_foreach_cluster, module_and_mapping
 
 # Tests if `setting` exists within the cluster config and has `expected` as the value for that setting
 # Use `exists` to test if you expect a setting to not exist
-def _test_cluster_setting(yaml, setting, expected, exists=True):
+def _test_cluster_setting(yaml, setting, expected, exists=True, cluster_name="cluster_httpbin_default"):
     econf = econf_compile(yaml)
 
     def check(cluster):
@@ -15,11 +15,11 @@ def _test_cluster_setting(yaml, setting, expected, exists=True):
         else:
             assert setting not in cluster
 
-    econf_foreach_cluster(econf, check)
+    econf_foreach_cluster(econf, check, name=cluster_name)
 
 
 # Tests a setting in a cluster that has it's own fields. Example: common_http_protocol_options has multiple subfields
-def _test_cluster_subfields(yaml, setting, expectations={}, exists=True):
+def _test_cluster_subfields(yaml, setting, expectations={}, exists=True, cluster_name="cluster_httpbin_default"):
     econf = econf_compile(yaml)
 
     def check(cluster):
@@ -32,7 +32,7 @@ def _test_cluster_subfields(yaml, setting, expectations={}, exists=True):
             assert key in cluster[setting]
             assert cluster[setting][key] == expected
 
-    econf_foreach_cluster(econf, check)
+    econf_foreach_cluster(econf, check, name=cluster_name)
 
 
 # Test dns_type setting in Mapping
@@ -93,7 +93,7 @@ def test_healthy_panic_threshold():
         "  policy: round_robin",
         "  healthy_panic_threshold: 25.0"
     ])
-    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 25.0}}, exists=True)
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 25.0}}, exists=True, cluster_name="cluster_httpbin_default_er_round_robin")
 
 
 @pytest.mark.compilertest
@@ -105,7 +105,7 @@ def test_healthy_panic_threshold_zero():
         "  policy: round_robin",
         "  healthy_panic_threshold: 0.0"
     ])
-    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 0.0}}, exists=True)
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 0.0}}, exists=True, cluster_name="cluster_httpbin_default_er_round_robin")
 
 
 @pytest.mark.compilertest
@@ -117,7 +117,7 @@ def test_healthy_panic_threshold_hundred():
         "  policy: round_robin",
         "  healthy_panic_threshold: 100.0"
     ])
-    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 100.0}}, exists=True)
+    _test_cluster_subfields(yaml, setting="common_lb_config", expectations={"healthy_panic_threshold": {"value": 100.0}}, exists=True, cluster_name="cluster_httpbin_default_er_round_robin")
 
 
 @pytest.mark.compilertest
@@ -128,4 +128,4 @@ def test_healthy_panic_threshold_not_set():
         "load_balancer:",
         "  policy: round_robin"
     ])
-    _test_cluster_setting(yaml, setting="common_lb_config", expected=False, exists=False)
+    _test_cluster_setting(yaml, setting="common_lb_config", expected=False, exists=False, cluster_name="cluster_httpbin_default_er_round_robin")

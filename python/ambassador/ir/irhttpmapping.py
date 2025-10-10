@@ -489,18 +489,20 @@ class IRHTTPMapping(IRBaseMapping):
 
         is_valid = False
         if lb_policy in ["round_robin", "least_request"]:
-            if len(load_balancer) == 1:
-                is_valid = True
+            # For round_robin and least_request, we only need the policy.
+            # Additional fields like healthy_panic_threshold are allowed.
+            is_valid = True
         elif lb_policy in ["ring_hash", "maglev"]:
-            if len(load_balancer) == 2:
-                if "cookie" in load_balancer:
-                    cookie = load_balancer.get("cookie")
-                    if "name" in cookie:
-                        is_valid = True
-                elif "header" in load_balancer:
+            # For ring_hash and maglev, we need policy plus one of: cookie, header, or source_ip
+            # Additional fields like healthy_panic_threshold are allowed.
+            if "cookie" in load_balancer:
+                cookie = load_balancer.get("cookie")
+                if "name" in cookie:
                     is_valid = True
-                elif "source_ip" in load_balancer:
-                    is_valid = True
+            elif "header" in load_balancer:
+                is_valid = True
+            elif "source_ip" in load_balancer:
+                is_valid = True
 
         return is_valid
 
