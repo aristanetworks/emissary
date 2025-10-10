@@ -124,24 +124,37 @@ class V3Cluster(Cacheable):
                 float(cluster_max_connection_lifetime_ms) / 1000.0
             )
 
+        circuit_breakers = self.get_circuit_breakers(cluster)
+        if circuit_breakers is not None:
+            fields["circuit_breakers"] = circuit_breakers
+
+        # Determine if we need HTTP/2 configuration
+        # This can be either because the cluster is explicitly marked as gRPC,
+        # or because the cluster has max_concurrent_streams configured (which implies HTTP/2)
+        needs_http2 = cluster.get("grpc", False)
+
+        # Get max_concurrent_streams from cluster or module
         if cluster.max_concurrent_streams:
             max_concurrent_streams = cluster.max_concurrent_streams
         else:
             max_concurrent_streams = cluster.ir.ambassador_module.get(
                 "max_concurrent_streams", None
             )
+
+        # If max_concurrent_streams is configured, we need HTTP/2
         if max_concurrent_streams:
-            common_http_options = self.setdefault("common_http_protocol_options", {})
-            common_http_options["max_concurrent_streams"] = str(max_concurrent_streams)
+            needs_http2 = True
 
-        circuit_breakers = self.get_circuit_breakers(cluster)
-        if circuit_breakers is not None:
-            fields["circuit_breakers"] = circuit_breakers
-
-        # If this cluster is using http2 for grpc, set http2_protocol_options
+        # If this cluster needs HTTP/2, set http2_protocol_options
         # Otherwise, check for http1-specific configuration.
-        if cluster.get("grpc", False):
+        if needs_http2:
             tmp = {}
+
+            # Add max_concurrent_streams if configured
+            if max_concurrent_streams:
+                tmp["max_concurrent_streams"] = str(max_concurrent_streams)
+
+            # Add other HTTP/2 options for gRPC or general HTTP/2 usage
             initial_stream_window_size = cluster.ir.ambassador_module.get(
                 "upstream_initial_stream_window_size", None
             )
@@ -152,6 +165,7 @@ class V3Cluster(Cacheable):
                 tmp["initial_stream_window_size"] = initial_stream_window_size
             if initial_connection_window_size:
                 tmp["initial_connection_window_size"] = initial_connection_window_size
+
             self["http2_protocol_options"] = tmp
         else:
             proper_case: bool = cluster.ir.ambassador_module["proper_case"]

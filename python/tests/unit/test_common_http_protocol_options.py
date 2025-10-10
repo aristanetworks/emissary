@@ -19,6 +19,22 @@ def _test_common_http_protocol_options(yaml, expectations={}):
     econf_foreach_cluster(econf, check)
 
 
+def _test_http2_protocol_options(yaml, expectations={}):
+    econf = econf_compile(yaml)
+
+    def check(cluster):
+        if expectations:
+            assert "http2_protocol_options" in cluster
+        else:
+            assert "http2_protocol_options" not in cluster
+        for key, expected in expectations.items():
+            print("checking key %s" % key)
+            assert key in cluster["http2_protocol_options"]
+            assert cluster["http2_protocol_options"][key] == expected
+
+    econf_foreach_cluster(econf, check)
+
+
 @pytest.mark.compilertest
 def test_cluster_max_connection_lifetime_ms_missing():
     # If we do not set the config, it should not appear in the Envoy conf.
@@ -116,6 +132,6 @@ def test_max_concurrent_streams():
     yaml = module_and_mapping_manifests(
         None, ["max_concurrent_streams: 100"]
     )
-    _test_common_http_protocol_options(
+    _test_http2_protocol_options(
         yaml, expectations={"max_concurrent_streams": "100"}
     )
