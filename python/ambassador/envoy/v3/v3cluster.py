@@ -138,10 +138,15 @@ class V3Cluster(Cacheable):
             initial_connection_window_size = cluster.ir.ambassador_module.get(
                 "upstream_initial_connection_window_size", None
             )
+            max_concurrent_streams = cluster.ir.ambassador_module.get(
+                "upstream_max_concurrent_streams", None
+            )
             if initial_stream_window_size:
                 tmp["initial_stream_window_size"] = initial_stream_window_size
             if initial_connection_window_size:
                 tmp["initial_connection_window_size"] = initial_connection_window_size
+            if max_concurrent_streams:
+                tmp["max_concurrent_streams"] = max_concurrent_streams
             self["http2_protocol_options"] = tmp
         else:
             proper_case: bool = cluster.ir.ambassador_module["proper_case"]
