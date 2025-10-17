@@ -61,7 +61,7 @@ class V3Ready(dict):
             typed_config["access_log"] = cls.access_log(config)
 
         # required for test_max_concurrent_streams.py
-        max_concurrent_streams = config.ir.ambassador_module.get("max_concurrent_streams", None)
+        max_concurrent_streams = config.ir.ambassador_module.get("downstream_max_concurrent_streams", None)
         if max_concurrent_streams:
             typed_config["http2_protocol_options"]= {
                 "max_concurrent_streams":  max_concurrent_streams
