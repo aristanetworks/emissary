@@ -30,9 +30,16 @@ class IRRetryPolicy(IRResource):
 
     def validate_retry_policy(self) -> bool:
         retry_on = self.get("retry_on", None)
+        retry_grpc_on = self.get("retry_grpc_on", None)
 
-        is_valid = False
-        if retry_on in {
+        # At least one of retry_on or retry_grpc_on should be specified
+        if not retry_on and not retry_grpc_on:
+            return False
+
+        is_valid = True
+
+        # Validate retry_on if specified
+        if retry_on and retry_on not in {
             "5xx",
             "gateway-error",
             "connect-failure",
@@ -40,7 +47,24 @@ class IRRetryPolicy(IRResource):
             "refused-stream",
             "retriable-status-codes",
         }:
-            is_valid = True
+            is_valid = False
+
+        # Validate retry_grpc_on if specified
+        # retry_grpc_on can be a comma-separated string
+        if retry_grpc_on:
+            valid_grpc_conditions = {
+                "cancelled",
+                "deadline-exceeded",
+                "internal",
+                "resource-exhausted",
+                "unavailable",
+            }
+            # Split on comma and validate each condition
+            grpc_conditions = [c.strip() for c in retry_grpc_on.split(",")]
+            for condition in grpc_conditions:
+                if condition not in valid_grpc_conditions:
+                    is_valid = False
+                    break
 
         return is_valid
 
@@ -60,5 +84,20 @@ class IRRetryPolicy(IRResource):
                 "metadata_labels",
             ]:
                 raw_dict.pop(key, None)
+
+        # Combine retry_on and retry_grpc_on into a single retry_on field for Envoy
+        retry_on = raw_dict.get("retry_on", "")
+        retry_grpc_on = raw_dict.get("retry_grpc_on", "")
+
+        if retry_on and retry_grpc_on:
+            # Both are specified, combine them with a comma
+            raw_dict["retry_on"] = f"{retry_on},{retry_grpc_on}"
+        elif retry_grpc_on:
+            # Only gRPC retry conditions specified
+            raw_dict["retry_on"] = retry_grpc_on
+        # If only retry_on is specified, it's already in the dict
+
+        # Remove the separate retry_grpc_on field since Envoy expects everything in retry_on
+        raw_dict.pop("retry_grpc_on", None)
 
         return raw_dict
