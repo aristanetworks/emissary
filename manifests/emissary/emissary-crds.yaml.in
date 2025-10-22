@@ -2546,6 +2546,14 @@ spec:
                     - refused-stream
                     - retriable-status-codes
                     type: string
+                  retry_grpc_on:
+                    enum:
+                    - cancelled
+                    - deadline-exceeded
+                    - internal
+                    - resource-exhausted
+                    - unavailable
+                    type: string
                 type: object
               rewrite:
                 type: string
@@ -3021,6 +3029,14 @@ spec:
                     - retriable-4xx
                     - refused-stream
                     - retriable-status-codes
+                    type: string
+                  retry_grpc_on:
+                    enum:
+                    - cancelled
+                    - deadline-exceeded
+                    - internal
+                    - resource-exhausted
+                    - unavailable
                     type: string
                 type: object
               rewrite:
@@ -3749,6 +3765,14 @@ spec:
                     - retriable-4xx
                     - refused-stream
                     - retriable-status-codes
+                    type: string
+                  retry_grpc_on:
+                    enum:
+                    - cancelled
+                    - deadline-exceeded
+                    - internal
+                    - resource-exhausted
+                    - unavailable
                     type: string
                 type: object
               rewrite:
