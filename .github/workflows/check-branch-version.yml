@@ -7,7 +7,7 @@ name: Check branch version
 
 "on":
   push:
-    #   branches:
+    # branches:
     #     - master
     #     - release/v*
     # pull_request:

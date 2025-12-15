@@ -114,7 +114,8 @@ def test_both_one_module_one_mapping():
 
 @pytest.mark.compilertest
 def test_max_concurrent_streams():
-    # TODO: We should probably move this to a cluster test (like the others)
+    # TODO: We should probably move this implemenation to a cluster config,
+    # so the tests and the configuration itself look like the others
 
     # downstream_max_concurrent_streams is a module-level setting that affects
     # the listener/HCM http2_protocol_options, not cluster common_http_protocol_options
