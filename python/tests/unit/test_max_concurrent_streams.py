@@ -32,7 +32,7 @@ def _get_envoy_config(yaml):
     return EnvoyConfig.generate(ir)
 
 @pytest.mark.compilertest
-def test_max_concurrent_requests_v3():
+def test_max_concurrent_streams_v3():
     yaml = """
 ---
 apiVersion: getambassador.io/v3alpha1
@@ -42,7 +42,7 @@ metadata:
   namespace: default
 spec:
   config:
-    max_concurrent_requests: 96
+    max_concurrent_streams: 96
 ---
 apiVersion: getambassador.io/v3alpha1
 kind: Mapping
@@ -64,15 +64,15 @@ spec:
     for listener in conf["static_resources"]["listeners"]:
         for filter_chain in listener["filter_chains"]:
             for f in filter_chain["filters"]:
-                max_concurrent_requests = f["typed_config"].get("max_concurrent_requests", None)
+                max_concurrent_streams = f["typed_config"].get("max_concurrent_streams", None)
                 assert (
-                    max_concurrent_requests is not None
-                ), f"max_concurrent_requests not found on typed_config: {f['typed_config']}"
+                    max_concurrent_streams is not None
+                ), f"max_concurrent_streams not found on typed_config: {f['typed_config']}"
 
-                print(f"Found max_concurrent_requests = {max_concurrent_requests}")
+                print(f"Found max_concurrent_streams = {max_concurrent_streams}")
                 key_found = True
                 assert expected == int(
-                    max_concurrent_requests
-                ), "max_concurrent_requests must equal the value set on the ambassador Module"
-    assert key_found, "max_concurrent_requests must be found in the envoy config"
+                    max_concurrent_streams
+                ), "max_concurrent_streams must equal the value set on the ambassador Module"
+    assert key_found, "max_concurrent_streams must be found in the envoy config"
 
