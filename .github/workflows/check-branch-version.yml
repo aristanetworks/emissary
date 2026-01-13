@@ -7,18 +7,19 @@ name: Check branch version
 
 "on":
   push:
-    branches:
-      - master
-      - release/v*
-  pull_request:
-    branches:
-      - master
-      - release/v*
-    types:
-      - opened   # default
-      - reopened # default
-      - edited   # default
-      - synchronize # also run if the target branch changes
+    # branches:
+    #     - master
+    #     - release/v*
+    # pull_request:
+    #   branches:
+    #     - master
+    #     - release/v*
+    #   types:
+    #     - opened   # default
+    #     - reopened # default
+    #     - edited   # default
+    #     - synchronize # also run if the target branch changes
+  workflow_dispatch:
 
 jobs:
   check-branch-version:

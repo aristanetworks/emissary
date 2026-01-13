@@ -111,11 +111,37 @@ def test_both_one_module_one_mapping():
         yaml, expectations={"max_connection_duration": "2.005s", "idle_timeout": "4.005s"}
     )
 
+
 @pytest.mark.compilertest
 def test_max_concurrent_streams():
+    # TODO: We should probably move this implemenation to a cluster config,
+    # so the tests and the configuration itself look like the others
+
+    # downstream_max_concurrent_streams is a module-level setting that affects
+    # the listener/HCM http2_protocol_options, not cluster common_http_protocol_options
     yaml = module_and_mapping_manifests(
-        None, ["downstream_max_concurrent_streams: 100"]
+        ["downstream_max_concurrent_streams: 100"], None
     )
-    _test_common_http_protocol_options(
-        yaml, expectations={"max_concurrent_streams": "100"}
-    )
+    econf = econf_compile(yaml)
+
+    # Extract all HCM typed_configs from user-facing listeners
+    hcm_configs = [
+        f["typed_config"]
+        for listener in econf["static_resources"]["listeners"]
+        if listener["name"].startswith("listener-")
+        for filter_chain in listener["filter_chains"]
+        for f in filter_chain["filters"]
+        if f.get("name") == "envoy.filters.network.http_connection_manager"
+    ]
+
+    # Check that all HCMs have the expected http2_protocol_options
+    http2_options = [
+        cfg.get("http2_protocol_options", {})
+        for cfg in hcm_configs
+    ]
+
+    assert len(http2_options) > 0, "Should have at least one HCM config"
+    assert all(
+        opts.get("max_concurrent_streams") == 100
+        for opts in http2_options
+    ), "All HCMs should have max_concurrent_streams set to 100"
