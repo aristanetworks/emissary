@@ -44,7 +44,7 @@ class TestIRRetryPolicyGrpc:
                 ir=self.ir,
                 aconf=self.aconf,
                 retry_grpc_on=condition
-            )
+        )
             assert policy.validate_retry_policy() is False
 
     def test_retry_on_and_retry_grpc_on_both_valid(self):
