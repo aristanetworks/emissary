@@ -442,7 +442,7 @@ class TestCountingKubernetesProcessor:
 
 
 class TestDependencyManager:
-    def setup(self):
+    def setup_method(self):
         self.deps = DependencyManager(
             [
                 SecretDependency(),
