@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 
 from ambassador.config import Config
@@ -9,6 +8,8 @@ from ambassador.ir.irretrypolicy import IRRetryPolicy
 class TestIRRetryPolicyGrpc:
     def setup_method(self):
         self.ir = MagicMock(spec=IR)
+        self.ir.ambassador_namespace = "default"
+        self.ir.logger = MagicMock()
         self.aconf = MagicMock(spec=Config)
 
     def test_retry_grpc_on_valid_values(self):
