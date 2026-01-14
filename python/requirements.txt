@@ -36,7 +36,11 @@ markupsafe==3.0.2
     # via
     #   jinja2
     #   werkzeug
-orjson==3.10.15
+oauthlib==3.2.2
+    # via
+    #   kubernetes
+    #   requests-oauthlib
+orjson==3.11.5
     # via -r requirements.in
 packaging==24.2
     # via gunicorn
