@@ -145,17 +145,19 @@ main() {
 		done
 		repos+=("$needle")
 	}
-	if [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
-		add_repo "$BASE_PYTHON_REPO"
-	fi
-	if [[ -n "${DEV_REGISTRY:-}" ]]; then
-		add_repo "${DEV_REGISTRY}/base-python"
-	fi
-	# We include docker.io/emissaryingress/base-python as a fallback
-	# when a registry is configured, because rebuilding orjson takes
-	# so long that we really want a cache-hit if at all possible.
-	# Skip this in local-only mode to avoid authentication issues.
-	if [[ -n "${DEV_REGISTRY:-}" ]] || [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
+	# Check if we're in CI local-only mode (no real registry)
+	local use_local_images="${CI_USE_LOCAL_IMAGES:-false}"
+
+	if [[ "$use_local_images" != "true" ]]; then
+		if [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
+			add_repo "$BASE_PYTHON_REPO"
+		fi
+		if [[ -n "${DEV_REGISTRY:-}" ]]; then
+			add_repo "${DEV_REGISTRY}/base-python"
+		fi
+		# We include docker.io/emissaryingress/base-python as a fallback
+		# when a registry is configured, because rebuilding orjson takes
+		# so long that we really want a cache-hit if at all possible.
 		add_repo 'docker.io/emissaryingress/base-python'
 	fi
 
@@ -189,9 +191,13 @@ main() {
 		statnl_done 'done building'
 
 		# Push
-		# Only push if we have a registry configured (DEV_REGISTRY or BASE_PYTHON_REPO)
+		# Only push if we're not in CI local-only mode
 		# This allows local-only builds for CI without credentials
-		if [[ -n "${DEV_REGISTRY:-}" ]] || [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
+		if [[ "${CI_USE_LOCAL_IMAGES:-false}" == "true" ]]; then
+			msg 'Skipping push (CI_USE_LOCAL_IMAGES=true)'
+			# Tag locally for consistency
+			docker tag "$id" "emissary.local/base-python:$tag" >&2
+		else
 			pushed=0
 			for repo in "${repos[@]}"; do
 				statnl_busy 'Attempting to push %q' "$repo:$tag"
@@ -207,10 +213,6 @@ main() {
 				error "Could not push locally-built image to any remote repositories"
 				return 1
 			fi
-		else
-			msg 'Skipping push (no DEV_REGISTRY or BASE_PYTHON_REPO configured)'
-			# Tag locally for consistency
-			docker tag "$id" "emissary.local/base-python:$tag" >&2
 		fi
 	fi
 

@@ -22,9 +22,10 @@ def _get_images() -> Dict[str, str]:
     else:
         image_names.append("emissary")
 
-    # Check if we should use local images (no DEV_REGISTRY set)
+    # Check if we should use local images
+    # CI_USE_LOCAL_IMAGES is set by build-aux/ci.mk when running in local-only mode
     # This allows running tests without a remote registry
-    use_local = not os.environ.get("DEV_REGISTRY")
+    use_local = os.environ.get("CI_USE_LOCAL_IMAGES") == "true"
     tag_type = "local" if use_local else "remote"
 
     try:

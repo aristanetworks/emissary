@@ -3,6 +3,15 @@ include $(dir $(lastword $(MAKEFILE_LIST)))tools.mk
 # Compute lowercase name for image references
 LCNAME := $(shell echo $(EMISSARY_NAME) | tr '[:upper:]' '[:lower:]')
 
+# Set a dummy DEV_REGISTRY for CI to prevent errors in builder.mk
+# This registry is never actually used - we only build local tags
+# But builder.mk requires it to be set to avoid parse-time errors
+# We also set CI_USE_LOCAL_IMAGES=true to signal to scripts that we're in local-only mode
+ifeq ($(DEV_REGISTRY),)
+  export DEV_REGISTRY := localhost:5000
+  export CI_USE_LOCAL_IMAGES := true
+endif
+
 K3S_VERSION      ?= 1.22.17-k3s1
 K3D_CLUSTER_NAME =
 K3D_ARGS         = --k3s-arg=--disable=traefik@server:* --k3s-arg=--kubelet-arg=max-pods=255@server:* --k3s-arg=--egress-selector-mode=disabled@server:*
