@@ -1,4 +1,4 @@
-name: KAT Tests (No Secrets Required)
+name: Arista KAT Tests
 
 on:
   push:
