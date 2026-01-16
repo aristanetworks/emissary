@@ -55,7 +55,8 @@ jobs:
           export KAT_REQ_LIMIT=900
           export DEV_KUBECONFIG=~/.kube/config
           # Don't set DEV_REGISTRY - use local images
-          make pytest-${{ matrix.test }}
+          # Use CI-specific pytest targets that don't require registry
+          make ci/pytest-${{ matrix.test }}
 
       - name: Collect logs and cleanup
         uses: ./.github/actions/after-job

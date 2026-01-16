@@ -40,8 +40,23 @@ ci/build-and-import-images: $(tools/k3d)
 .PHONY: ci/build-and-import-images
 
 # Python integration test environment for CI (no registry required)
-ci/python-integration-test-environment: ci/build-and-import-images
+# This is a minimal version of python-integration-test-environment that doesn't
+# require push-pytest-images or proxy (which both need DEV_REGISTRY)
 ci/python-integration-test-environment: $(tools/kubestatus)
 ci/python-integration-test-environment: $(tools/kubectl)
 ci/python-integration-test-environment: python-virtual-environment
 .PHONY: ci/python-integration-test-environment
+
+# Build the test list file without requiring push-pytest-images
+# This overrides the regular build-aux/.pytest-kat.txt.stamp target from builder.mk
+# to remove the push-pytest-images dependency
+build-aux/.pytest-kat.txt.stamp: $(OSS_HOME)/venv $(tools/kubectl) FORCE
+	. venv/bin/activate && set -o pipefail && pytest --collect-only python/tests/kat 2>&1 | sed -En 's/.*<Function (.*)>/\1/p' | cut -d. -f1 | sort -u > $@
+
+# CI-specific pytest targets that don't depend on python-integration-test-environment
+# (which requires DEV_REGISTRY). Instead, they only depend on the minimal CI setup.
+ci/pytest-kat-envoy3-tests-%: ci/python-integration-test-environment
+ci/pytest-kat-envoy3-tests-%: ci/build-and-import-images
+ci/pytest-kat-envoy3-tests-%: build-aux/pytest-kat.txt
+	$(MAKE) pytest-run-tests PYTEST_ARGS="$$PYTEST_ARGS -k '$$($(tools/py-split-tests) $(subst -of-, ,$*) <build-aux/pytest-kat.txt)' python/tests/kat"
+.PHONY: ci/pytest-kat-envoy3-tests-%
