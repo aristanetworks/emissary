@@ -183,7 +183,7 @@ class DiagApp(Flask):
     config_lock: threading.Lock
     diag_lock: threading.Lock
 
-    def setup(
+    def setup_method(
         self,
         snapshot_path: str,
         bootstrap_path: str,

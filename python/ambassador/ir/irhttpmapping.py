@@ -414,7 +414,7 @@ class IRHTTPMapping(IRBaseMapping):
             )
             del self[other]
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         # First things first: handle any deferred error.
         _deferred_error = self.get("_deferred_error")
         if _deferred_error:

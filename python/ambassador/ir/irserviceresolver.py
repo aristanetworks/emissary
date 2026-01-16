@@ -46,7 +46,7 @@ class IRServiceResolver(IRResource):
             ir=ir, aconf=aconf, rkey=rkey, kind=kind, name=name, location=location, **kwargs
         )
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         if self.kind == "ConsulResolver":
             self.resolve_with = "consul"
 

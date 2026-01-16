@@ -180,7 +180,7 @@ class IRBaseMapping(IRResource):
         name = name.split(".")[0]
         return f"{kind}-{version}-{name}-{namespace}"
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         # Set up our cache key. We're using this format so that it'll be easy
         # to generate it just from the Mapping's K8s metadata.
         self._cache_key = IRBaseMapping.make_cache_key(self.kind, self.name, self.namespace)

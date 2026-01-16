@@ -101,7 +101,7 @@ class IRTLSContext(IRResource):
 
         return f"<IRTLSContext {self.name}.{self.namespace}{rcfstr}{fbstr}: hosts {hoststr} secret {secret_name}>"
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         if not self.get("_ambassador_enabled", False):
             spec_count = 0
             errors = 0

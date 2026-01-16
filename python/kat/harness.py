@@ -1026,7 +1026,7 @@ class Runner:
     def __call__(self):
         assert False, "this is here for py.test discovery purposes only"
 
-    def setup(self, selected):
+    def setup_method(self, selected):
         if not self.done:
             if not DOCTEST:
                 print()

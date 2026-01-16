@@ -169,7 +169,7 @@ class IRAmbassador(IRResource):
         self.ip_allow_deny: Optional[IRIPAllowDeny] = None
         self._finalized = False
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method_method(self, ir: "IR", aconf: Config) -> bool:
         # The heavy lifting here is mostly in the finalize() method, so that when we do fallback
         # lookups for TLS configuration stuff, the defaults are present in the Ambassador module.
         #

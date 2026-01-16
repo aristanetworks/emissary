@@ -26,7 +26,7 @@ class IRRateLimit(IRFilter):
             ir=ir, aconf=aconf, rkey=rkey, kind=kind, name=name, namespace=namespace, type="decoder"
         )
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         config_info = aconf.get_config("ratelimit_configs")
 
         if not config_info:

@@ -133,7 +133,7 @@ class IRErrorResponse(IRFilter):
     # Runs setup and always returns true to indicate success. This is safe because
     # _setup is tolerant of missing or invalid config. At the end of setup, the caller
     # should retain this object and use `config()` get the final, good config, if any.
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         self._setup(ir, aconf)
         return True
 

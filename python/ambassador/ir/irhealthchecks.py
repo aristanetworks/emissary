@@ -36,7 +36,7 @@ class IRHealthChecks(IRResource):
             return None
         return self._mappers
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         self._setup(ir, aconf)
         return True
 

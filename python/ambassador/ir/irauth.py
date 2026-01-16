@@ -46,7 +46,7 @@ class IRAuth(IRFilter):
             **kwargs,
         )
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         module_info = aconf.get_module("authentication")
 
         if module_info:

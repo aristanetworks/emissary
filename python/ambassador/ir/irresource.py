@@ -193,7 +193,7 @@ class IRResource(Resource):
     def __bool__(self) -> bool:
         return self._active and not self._errored
 
-    def setup(self, ir: "IR", aconf: Config) -> bool:
+    def setup_method(self, ir: "IR", aconf: Config) -> bool:
         # If you don't override setup, you end up with an IRResource that's always active.
         return True
 
