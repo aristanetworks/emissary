@@ -72,15 +72,3 @@ ci/pytest-kat-envoy3-tests-%: ci/build-and-import-images
 ci/pytest-kat-envoy3-tests-%: build-aux/pytest-kat.txt
 	$(MAKE) pytest-run-tests PYTEST_ARGS="$$PYTEST_ARGS -k '$$($(tools/py-split-tests) $(subst -of-, ,$*) <build-aux/pytest-kat.txt)' python/tests/kat"
 .PHONY: ci/pytest-kat-envoy3-tests-%
-
-# In CI local mode, override the .docker.tag.remote and .docker.push.remote rules
-# to prevent them from actually trying to push to the dummy registry
-ifdef CI_LOCAL_MODE
-  %.docker.tag.remote: %.docker $(tools/write-dockertagfile) FORCE
-	@printf "$(CYN)==> $(YEL)Skipping remote tag (CI local mode)$(END)\n"
-	printf '%s\n' $$(cat $<) $(docker.tag.remote) | $(tools/write-dockertagfile) $@
-
-  %.docker.push.remote: %.docker.tag.remote FORCE
-	@printf "$(CYN)==> $(YEL)Skipping remote push (CI local mode)$(END)\n"
-	cp $< $@
-endif

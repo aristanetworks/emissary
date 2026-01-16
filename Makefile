@@ -59,6 +59,8 @@ include $(OSS_HOME)/build-aux/ci.mk
 include $(OSS_HOME)/build-aux/deps.mk
 include $(OSS_HOME)/build-aux/main.mk
 include $(OSS_HOME)/build-aux/builder.mk
+# Include CI overrides after builder.mk so they can override docker.mk rules
+-include $(OSS_HOME)/build-aux/ci-overrides.mk
 include $(OSS_HOME)/build-aux/check.mk
 include $(OSS_HOME)/_cxx/envoy.mk
 include $(OSS_HOME)/releng/release.mk
