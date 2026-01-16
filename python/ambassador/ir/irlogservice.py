@@ -32,7 +32,7 @@ class IRLogService(IRResource):
 
         super().__init__(ir=ir, aconf=config, rkey=rkey, kind=kind, name=name, namespace=namespace)
 
-    def setup_method(self, ir: "IR", config) -> bool:
+    def setup(self, ir: "IR", config) -> bool:
         self.service = config.get("service")
         if not self.service:
             self.post_error("service must be present for a remote log service!")

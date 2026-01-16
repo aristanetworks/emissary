@@ -19,7 +19,7 @@ class IRGzip(IRFilter):
     ) -> None:
         super().__init__(ir=ir, aconf=aconf, rkey=rkey, kind=kind, name=name, **kwargs)
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         self["memory_level"] = self.pop("memory_level", None)
         self["content_length"] = self.pop("min_content_length", None)
         self["compression_level"] = self.pop("compression_level", None)

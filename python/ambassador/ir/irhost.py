@@ -66,7 +66,7 @@ class IRHost(IRResource):
             **new_args,
         )
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         ir.logger.debug(f"Host {self.name} setting up")
 
         if not self.get("hostname", None):

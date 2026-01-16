@@ -21,7 +21,7 @@ class IRRetryPolicy(IRResource):
 
         super().__init__(ir=ir, aconf=aconf, rkey=rkey, kind=kind, name=name, **kwargs)
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         if not self.validate_retry_policy():
             self.post_error("Invalid retry policy specified: {}".format(self))
             return False

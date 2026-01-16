@@ -62,7 +62,7 @@ class IRGOFilter(IRFilter):
         )
 
     # We want to enable this filter only in Edge Stack
-    def setup_method(self, ir: "IR", _: Config) -> bool:
+    def setup(self, ir: "IR", _: Config) -> bool:
         if ir.edge_stack_allowed:
             if go_filter_disabled().lower() in ("true", "yes", "1"):
                 self.logger.info(

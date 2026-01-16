@@ -90,7 +90,7 @@ class IRListener(IRResource):
             **new_args,
         )
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         # Default hostBinding information early, so that we don't have to worry about it
         # ever being unset. We default to only looking for Hosts in our own namespace, and
         # to not using selectors beyond that.

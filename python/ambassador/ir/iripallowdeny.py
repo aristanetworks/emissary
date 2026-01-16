@@ -58,7 +58,7 @@ class IRIPAllowDeny(IRFilter):
             **kwargs,
         )
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         """
         Set up an IRIPAllowDeny based on the action and principals passed into
         __init__.

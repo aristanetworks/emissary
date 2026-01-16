@@ -35,7 +35,7 @@ class IRTracing(IRResource):
         super().__init__(ir=ir, aconf=aconf, rkey=rkey, kind=kind, name=name, namespace=namespace)
         self.cluster = None
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         # Some of the validations might go away if JSON Schema is doing the validations, but need to check on that
 
         config_info = aconf.get_config("tracing_configs")

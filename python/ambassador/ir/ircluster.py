@@ -363,7 +363,7 @@ class IRCluster(IRResource):
             for error in errors:
                 ir.post_error(error, resource=self)
 
-    def setup_method(self, ir: "IR", aconf: Config) -> bool:
+    def setup(self, ir: "IR", aconf: Config) -> bool:
         self._cache_key = f"Cluster-{self.name}"
 
         if self.ignore_cluster:
