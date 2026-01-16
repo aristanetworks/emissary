@@ -1,5 +1,8 @@
 include $(dir $(lastword $(MAKEFILE_LIST)))tools.mk
 
+# Compute lowercase name for image references
+LCNAME := $(shell echo $(EMISSARY_NAME) | tr '[:upper:]' '[:lower:]')
+
 K3S_VERSION      ?= 1.22.17-k3s1
 K3D_CLUSTER_NAME =
 K3D_ARGS         = --k3s-arg=--disable=traefik@server:* --k3s-arg=--kubelet-arg=max-pods=255@server:* --k3s-arg=--egress-selector-mode=disabled@server:*
