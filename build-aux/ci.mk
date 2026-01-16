@@ -3,13 +3,16 @@ include $(dir $(lastword $(MAKEFILE_LIST)))tools.mk
 # Compute lowercase name for image references
 LCNAME := $(shell echo $(EMISSARY_NAME) | tr '[:upper:]' '[:lower:]')
 
-# Set a dummy DEV_REGISTRY for CI to prevent errors in builder.mk
-# This registry is never actually used - we only build local tags
-# But builder.mk requires it to be set to avoid parse-time errors
-# We also set CI_USE_LOCAL_IMAGES=true to signal to scripts that we're in local-only mode
-ifeq ($(DEV_REGISTRY),)
+# CI mode: work without a real registry
+# When DEV_REGISTRY is not set, we're in local-only CI mode
+# Set a dummy value to prevent parse errors, and mark that we're in local mode
+ifndef DEV_REGISTRY
   export DEV_REGISTRY := localhost:5000
   export CI_USE_LOCAL_IMAGES := true
+  # Prevent docker.mk from creating .docker.tag.remote and .docker.push.remote targets
+  # by unsetting the docker.tag.remote variable after builder.mk sets it
+  # This must be done after builder.mk is included, so we'll do it via a hook
+  CI_LOCAL_MODE := true
 endif
 
 K3S_VERSION      ?= 1.22.17-k3s1
@@ -69,3 +72,15 @@ ci/pytest-kat-envoy3-tests-%: ci/build-and-import-images
 ci/pytest-kat-envoy3-tests-%: build-aux/pytest-kat.txt
 	$(MAKE) pytest-run-tests PYTEST_ARGS="$$PYTEST_ARGS -k '$$($(tools/py-split-tests) $(subst -of-, ,$*) <build-aux/pytest-kat.txt)' python/tests/kat"
 .PHONY: ci/pytest-kat-envoy3-tests-%
+
+# In CI local mode, override the .docker.tag.remote and .docker.push.remote rules
+# to prevent them from actually trying to push to the dummy registry
+ifdef CI_LOCAL_MODE
+  %.docker.tag.remote: %.docker $(tools/write-dockertagfile) FORCE
+	@printf "$(CYN)==> $(YEL)Skipping remote tag (CI local mode)$(END)\n"
+	printf '%s\n' $$(cat $<) $(docker.tag.remote) | $(tools/write-dockertagfile) $@
+
+  %.docker.push.remote: %.docker.tag.remote FORCE
+	@printf "$(CYN)==> $(YEL)Skipping remote push (CI local mode)$(END)\n"
+	cp $< $@
+endif
