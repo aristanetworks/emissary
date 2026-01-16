@@ -22,9 +22,14 @@ def _get_images() -> Dict[str, str]:
     else:
         image_names.append("emissary")
 
+    # Check if we should use local images (no DEV_REGISTRY set)
+    # This allows running tests without a remote registry
+    use_local = not os.environ.get("DEV_REGISTRY")
+    tag_type = "local" if use_local else "remote"
+
     try:
         subprocess.run(
-            ["make"] + [f"docker/{name}.docker.push.remote" for name in image_names],
+            ["make"] + [f"docker/{name}.docker.tag.{tag_type}" for name in image_names],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -33,8 +38,22 @@ def _get_images() -> Dict[str, str]:
     except subprocess.CalledProcessError as err:
         raise Exception(f"{err.stdout}{err}") from err
 
+    # If using remote registry, also push the images
+    if not use_local:
+        try:
+            subprocess.run(
+                ["make"] + [f"docker/{name}.docker.push.remote" for name in image_names],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+        except subprocess.CalledProcessError as err:
+            raise Exception(f"{err.stdout}{err}") from err
+
     for name in image_names:
-        with open(f"docker/{name}.docker.push.remote", "r") as fh:
+        tag_file = f"docker/{name}.docker.{'push' if not use_local else 'tag'}.{tag_type}"
+        with open(tag_file, "r") as fh:
             # file contents:
             #   line 1: image ID
             #   line 2: tag 1
