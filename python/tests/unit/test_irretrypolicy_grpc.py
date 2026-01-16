@@ -147,12 +147,81 @@ class TestIRRetryPolicyGrpc:
             _errored=False,
             kind="IRRetryPolicy"
         )
-        
+
         result = policy.as_dict()
-        
+
         # Should remove internal fields
         assert "_active" not in result
         assert "_errored" not in result
         assert "kind" not in result
         # Should keep retry condition
         assert result["retry_on"] == "internal"
+
+    def test_retry_grpc_on_comma_separated_valid(self):
+        """Test that comma-separated valid gRPC retry conditions are accepted"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_grpc_on="cancelled,unavailable"
+        )
+        assert policy.validate_retry_policy() is True
+
+    def test_retry_grpc_on_comma_separated_multiple_valid(self):
+        """Test that multiple comma-separated valid gRPC retry conditions are accepted"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_grpc_on="cancelled,deadline-exceeded,internal,resource-exhausted,unavailable"
+        )
+        assert policy.validate_retry_policy() is True
+
+    def test_retry_grpc_on_comma_separated_with_spaces(self):
+        """Test that comma-separated gRPC retry conditions with spaces are accepted"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_grpc_on="cancelled, unavailable, internal"
+        )
+        assert policy.validate_retry_policy() is True
+
+    def test_retry_grpc_on_comma_separated_invalid(self):
+        """Test that comma-separated gRPC retry conditions with one invalid value are rejected"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_grpc_on="cancelled,invalid-condition,unavailable"
+        )
+        assert policy.validate_retry_policy() is False
+
+    def test_as_dict_comma_separated_retry_grpc_on(self):
+        """Test that as_dict() preserves comma-separated retry_grpc_on values"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_grpc_on="cancelled,unavailable",
+            num_retries=2
+        )
+
+        result = policy.as_dict()
+
+        # Should move comma-separated retry_grpc_on to retry_on
+        assert result["retry_on"] == "cancelled,unavailable"
+        assert "retry_grpc_on" not in result
+        assert result["num_retries"] == 2
+
+    def test_as_dict_combines_retry_on_with_comma_separated_retry_grpc_on(self):
+        """Test that as_dict() combines retry_on with comma-separated retry_grpc_on"""
+        policy = IRRetryPolicy(
+            ir=self.ir,
+            aconf=self.aconf,
+            retry_on="5xx",
+            retry_grpc_on="cancelled,unavailable",
+            num_retries=3
+        )
+
+        result = policy.as_dict()
+
+        # Should combine both conditions
+        assert result["retry_on"] == "5xx,cancelled,unavailable"
+        assert "retry_grpc_on" not in result
+        assert result["num_retries"] == 3

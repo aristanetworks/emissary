@@ -50,14 +50,21 @@ class IRRetryPolicy(IRResource):
             is_valid = False
 
         # Validate retry_grpc_on if specified
-        if retry_grpc_on and retry_grpc_on not in {
-            "cancelled",
-            "deadline-exceeded",
-            "internal",
-            "resource-exhausted",
-            "unavailable",
-        }:
-            is_valid = False
+        # retry_grpc_on can be a comma-separated string
+        if retry_grpc_on:
+            valid_grpc_conditions = {
+                "cancelled",
+                "deadline-exceeded",
+                "internal",
+                "resource-exhausted",
+                "unavailable",
+            }
+            # Split on comma and validate each condition
+            grpc_conditions = [c.strip() for c in retry_grpc_on.split(",")]
+            for condition in grpc_conditions:
+                if condition not in valid_grpc_conditions:
+                    is_valid = False
+                    break
 
         return is_valid
 
