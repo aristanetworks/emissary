@@ -151,10 +151,13 @@ main() {
 	if [[ -n "${DEV_REGISTRY:-}" ]]; then
 		add_repo "${DEV_REGISTRY}/base-python"
 	fi
-	# We always include docker.io/emissaryingress/base-python as a
-	# fallback, because rebuilding orjson takes so long that we
-	# really want a cache-hit if at all possible.
-	add_repo 'docker.io/emissaryingress/base-python'
+	# We include docker.io/emissaryingress/base-python as a fallback
+	# when a registry is configured, because rebuilding orjson takes
+	# so long that we really want a cache-hit if at all possible.
+	# Skip this in local-only mode to avoid authentication issues.
+	if [[ -n "${DEV_REGISTRY:-}" ]] || [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
+		add_repo 'docker.io/emissaryingress/base-python'
+	fi
 
 	# Download
 	local id=''
@@ -186,20 +189,28 @@ main() {
 		statnl_done 'done building'
 
 		# Push
-		pushed=0
-		for repo in "${repos[@]}"; do
-			statnl_busy 'Attempting to push %q' "$repo:$tag"
-			docker tag "$id" "$repo:$tag" >&2
-			if docker push "$repo:$tag" >&2; then
-				statnl_done "${GRN}pushed"
-				pushed=1
-				continue
+		# Only push if we have a registry configured (DEV_REGISTRY or BASE_PYTHON_REPO)
+		# This allows local-only builds for CI without credentials
+		if [[ -n "${DEV_REGISTRY:-}" ]] || [[ -n "${BASE_PYTHON_REPO:-}" ]]; then
+			pushed=0
+			for repo in "${repos[@]}"; do
+				statnl_busy 'Attempting to push %q' "$repo:$tag"
+				docker tag "$id" "$repo:$tag" >&2
+				if docker push "$repo:$tag" >&2; then
+					statnl_done "${GRN}pushed"
+					pushed=1
+					continue
+				fi
+				statnl_done "${RED}failed to push"
+			done
+			if ! (( pushed )); then
+				error "Could not push locally-built image to any remote repositories"
+				return 1
 			fi
-			statnl_done "${RED}failed to push"
-		done
-		if ! (( pushed )); then
-			error "Could not push locally-built image to any remote repositories"
-			return 1
+		else
+			msg 'Skipping push (no DEV_REGISTRY or BASE_PYTHON_REPO configured)'
+			# Tag locally for consistency
+			docker tag "$id" "emissary.local/base-python:$tag" >&2
 		fi
 	fi
 
