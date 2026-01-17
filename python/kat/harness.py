@@ -1005,7 +1005,7 @@ class Runner:
                 )
 
                 with capsys.disabled():
-                    self.setup(selected)
+                    self.do_setup(selected)
 
                 # XXX: should aggregate the result of url checks
                 i = 0
@@ -1026,7 +1026,7 @@ class Runner:
     def __call__(self):
         assert False, "this is here for py.test discovery purposes only"
 
-    def setup(self, selected):
+    def do_setup(self, selected):
         if not self.done:
             if not DOCTEST:
                 print()
