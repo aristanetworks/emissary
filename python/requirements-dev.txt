@@ -4,7 +4,7 @@ httpretty
 mypy
 packaging
 pexpect
-pyOpenSSL
+pyOpenSSL<24.3.0  # Pin to <24.3.0 because CRL support was removed in 24.3.0
 pytest==8.0.2
 pytest-cov
 pytest-rerunfailures
