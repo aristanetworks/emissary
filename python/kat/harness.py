@@ -1389,11 +1389,13 @@ class Runner:
                 raise RuntimeError("Failed applying CRDs")
 
             print("waiting for emissary-apiext server to become available")
+            # Use a longer timeout in CI environments where startup can be slower
+            apiext_timeout = os.environ.get("KAT_APIEXT_TIMEOUT", "300")
             if os.system(
-                "kubectl wait --timeout=90s --for=condition=available deployment emissary-apiext -n emissary-system > /dev/null 2>&1"
+                f"kubectl wait --timeout={apiext_timeout}s --for=condition=available deployment emissary-apiext -n emissary-system > /dev/null 2>&1"
             ):
                 raise RuntimeError(
-                    "emissary-apiext server did not become available within 90 seconds"
+                    f"emissary-apiext server did not become available within {apiext_timeout} seconds"
                 )
             print("emissary-apiext server is available")
 
