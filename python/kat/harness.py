@@ -1720,6 +1720,12 @@ class Runner:
 
         if not_ready:
             print("%d not ready (%s), " % (len(not_ready), name), end="")
+            # Show details about the first not-ready pod
+            if not_ready:
+                first_node, first_name = not_ready[0]
+                print("\nDEBUG: Pod %s is not ready. Checking status..." % first_name)
+                os.system(f"kubectl get pod {first_name} -n default -o wide || true")
+                os.system(f"kubectl describe pod {first_name} -n default | tail -30 || true")
             return (False, not_ready)
 
         return (True, None)
