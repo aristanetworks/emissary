@@ -1391,9 +1391,29 @@ class Runner:
             print("waiting for emissary-apiext server to become available")
             # Use a longer timeout in CI environments where startup can be slower
             apiext_timeout = os.environ.get("KAT_APIEXT_TIMEOUT", "300")
+
+            # First check if the deployment exists
+            if os.system("kubectl get deployment emissary-apiext -n emissary-system > /dev/null 2>&1") != 0:
+                print("ERROR: emissary-apiext deployment does not exist!")
+                os.system("kubectl get deployments -n emissary-system")
+                raise RuntimeError("emissary-apiext deployment was not created")
+
+            # Show deployment status for debugging
+            print("emissary-apiext deployment status:")
+            os.system("kubectl get deployment emissary-apiext -n emissary-system")
+
             if os.system(
-                f"kubectl wait --timeout={apiext_timeout}s --for=condition=available deployment emissary-apiext -n emissary-system > /dev/null 2>&1"
+                f"kubectl wait --timeout={apiext_timeout}s --for=condition=available deployment emissary-apiext -n emissary-system"
             ):
+                # If it fails, show more debugging info
+                print("\nDEBUG: emissary-apiext deployment details:")
+                os.system("kubectl describe deployment emissary-apiext -n emissary-system")
+                print("\nDEBUG: emissary-apiext pods:")
+                os.system("kubectl get pods -n emissary-system -l app.kubernetes.io/name=emissary-apiext")
+                print("\nDEBUG: emissary-apiext pod details:")
+                os.system("kubectl describe pods -n emissary-system -l app.kubernetes.io/name=emissary-apiext")
+                print("\nDEBUG: emissary-apiext pod logs:")
+                os.system("kubectl logs -n emissary-system -l app.kubernetes.io/name=emissary-apiext --tail=50 --all-containers=true || true")
                 raise RuntimeError(
                     f"emissary-apiext server did not become available within {apiext_timeout} seconds"
                 )
