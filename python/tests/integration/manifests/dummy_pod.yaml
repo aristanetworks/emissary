@@ -23,6 +23,6 @@ spec:
   containers:
   - name: ambassador
     image: {images[emissary]}
-    imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     command: [ "sh" ]
     args: [ "-c", "while true; do sleep 3600; done" ]

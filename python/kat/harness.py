@@ -1540,6 +1540,13 @@ class Runner:
                 tries_left -= 1
 
                 if tries_left <= 0:
+                    # Show debugging info before failing
+                    print("\nDEBUG: Dummy pod details:")
+                    os.system("kubectl describe pod dummy-pod -n default")
+                    print("\nDEBUG: Dummy pod logs:")
+                    os.system("kubectl logs pod/dummy-pod -n default --all-containers=true --tail=100 || true")
+                    print("\nDEBUG: Events in default namespace:")
+                    os.system("kubectl get events -n default --sort-by='.lastTimestamp' | tail -20")
                     raise RuntimeError("Dummy pod never became available")
 
                 print("sleeping for dummy pod... (%d)" % tries_left)
