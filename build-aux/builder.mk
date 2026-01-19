@@ -6,7 +6,7 @@ BUILDER_NAME ?= $(LCNAME)
 include $(OSS_HOME)/build-aux/prelude.mk
 include $(OSS_HOME)/build-aux/colors.mk
 
-docker.tag.local = $(BUILDER_NAME).local/$(*F)
+docker.tag.local = $(BUILDER_NAME).local/$(*F):latest
 docker.tag.remote = $(if $(DEV_REGISTRY),,$(error $(REGISTRY_ERR)))$(DEV_REGISTRY)/$(*F):$(patsubst v%,%,$(VERSION))
 include $(OSS_HOME)/build-aux/docker.mk
 
