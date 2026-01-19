@@ -34,21 +34,33 @@ ci/teardown-k3d: $(tools/k3d)
 # Build test images locally and import them into k3d cluster
 # This avoids the need for a remote registry and secrets
 ci/build-and-import-images: docker/$(LCNAME).docker.tag.local
+ci/build-and-import-images: docker/$(LCNAME).docker.tag.remote
 ci/build-and-import-images: docker/test-auth.docker.tag.local
+ci/build-and-import-images: docker/test-auth.docker.tag.remote
 ci/build-and-import-images: docker/test-shadow.docker.tag.local
+ci/build-and-import-images: docker/test-shadow.docker.tag.remote
 ci/build-and-import-images: docker/test-stats.docker.tag.local
+ci/build-and-import-images: docker/test-stats.docker.tag.remote
 ci/build-and-import-images: docker/kat-client.docker.tag.local
+ci/build-and-import-images: docker/kat-client.docker.tag.remote
 ci/build-and-import-images: docker/kat-server.docker.tag.local
+ci/build-and-import-images: docker/kat-server.docker.tag.remote
 ci/build-and-import-images: docker/base-envoy.docker.tag.local
 ci/build-and-import-images: $(tools/k3d)
 	@printf "$(CYN)==> $(GRN)Importing images into k3d cluster$(END)\n"
 	$(tools/k3d) image import \
 		$$(sed -n 2p docker/$(LCNAME).docker.tag.local) \
+		$$(sed -n 2p docker/$(LCNAME).docker.tag.remote) \
 		$$(sed -n 2p docker/test-auth.docker.tag.local) \
+		$$(sed -n 2p docker/test-auth.docker.tag.remote) \
 		$$(sed -n 2p docker/test-shadow.docker.tag.local) \
+		$$(sed -n 2p docker/test-shadow.docker.tag.remote) \
 		$$(sed -n 2p docker/test-stats.docker.tag.local) \
+		$$(sed -n 2p docker/test-stats.docker.tag.remote) \
 		$$(sed -n 2p docker/kat-client.docker.tag.local) \
-		$$(sed -n 2p docker/kat-server.docker.tag.local)
+		$$(sed -n 2p docker/kat-client.docker.tag.remote) \
+		$$(sed -n 2p docker/kat-server.docker.tag.local) \
+		$$(sed -n 2p docker/kat-server.docker.tag.remote)
 .PHONY: ci/build-and-import-images
 
 # Python integration test environment for CI (no registry required)
