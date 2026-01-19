@@ -33,6 +33,7 @@ spec:
       containers:
       - name: statsd
         image: {images[test-stats]}
+        imagePullPolicy: IfNotPresent
         env:
         - name: STATSD_TEST_CLUSTER
           value: {self.target_cluster}

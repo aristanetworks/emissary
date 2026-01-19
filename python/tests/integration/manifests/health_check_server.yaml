@@ -38,6 +38,7 @@ spec:
       containers:
       - name: health-check-server
         image: {images[kat-server]}
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
         - containerPort: 8443
