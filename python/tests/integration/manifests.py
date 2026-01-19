@@ -25,8 +25,11 @@ def _get_images() -> Dict[str, str]:
     # Check if we should use local images
     # CI_USE_LOCAL_IMAGES is set by build-aux/ci.mk when running in local-only mode
     # This allows running tests without a remote registry
+    # Note: Even in CI local mode, we use "remote" tag format (localhost:5000/...)
+    # because images are imported into k3d with both local and remote tags,
+    # and we need consistency with AMBASSADOR_DOCKER_IMAGE which uses remote format
     use_local = os.environ.get("CI_USE_LOCAL_IMAGES") == "true"
-    tag_type = "local" if use_local else "remote"
+    tag_type = "remote"  # Always use remote tag format
 
     try:
         subprocess.run(
@@ -53,7 +56,9 @@ def _get_images() -> Dict[str, str]:
             raise Exception(f"{err.stdout}{err}") from err
 
     for name in image_names:
-        tag_file = f"docker/{name}.docker.{'push' if not use_local else 'tag'}.{tag_type}"
+        # In CI local mode, we use .tag.remote (not .push.remote) because we don't actually push
+        # In normal mode, we use .push.remote to ensure images are pushed before running tests
+        tag_file = f"docker/{name}.docker.{'tag' if use_local else 'push'}.{tag_type}"
         with open(tag_file, "r") as fh:
             # file contents:
             #   line 1: image ID

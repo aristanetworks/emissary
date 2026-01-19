@@ -17,6 +17,7 @@ spec:
       containers:
       - name: backend
         image: {images[kat-server]}
+        imagePullPolicy: IfNotPresent
         # ports:
         # (ports)
         env:
