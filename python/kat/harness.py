@@ -1481,6 +1481,13 @@ class Runner:
                 tries_left -= 1
 
                 if tries_left <= 0:
+                    # Show debugging info before failing
+                    print("\nDEBUG: KAT pod details:")
+                    os.system("kubectl describe pod kat -n default")
+                    print("\nDEBUG: KAT pod logs:")
+                    os.system("kubectl logs pod/kat -n default --all-containers=true --tail=100 || true")
+                    print("\nDEBUG: Events in default namespace:")
+                    os.system("kubectl get events -n default --sort-by='.lastTimestamp' | tail -20")
                     raise RuntimeError("KAT pod never became available")
 
                 print("sleeping for KAT pod... (%d)" % tries_left)
