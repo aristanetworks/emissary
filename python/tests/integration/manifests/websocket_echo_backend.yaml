@@ -28,3 +28,4 @@ spec:
       containers:
       - name: websocket-echo-server
         image: docker.io/johnesmet/go-websocket-echo-server:latest
+        imagePullPolicy: IfNotPresent

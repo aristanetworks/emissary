@@ -33,6 +33,13 @@ ci/teardown-k3d: $(tools/k3d)
 
 # Build test images locally and import them into k3d cluster
 # This avoids the need for a remote registry and secrets
+# External images used by KAT tests that need to be pre-pulled and imported
+# These are third-party images we don't build ourselves
+CI_EXTERNAL_IMAGES := \
+	istio/kubectl:1.5.10 \
+	docker.io/kennethreitz/httpbin \
+	docker.io/johnesmet/go-websocket-echo-server:latest
+
 ci/build-and-import-images: docker/$(LCNAME).docker.tag.local
 ci/build-and-import-images: docker/$(LCNAME).docker.tag.remote
 ci/build-and-import-images: docker/test-auth.docker.tag.local
@@ -47,7 +54,7 @@ ci/build-and-import-images: docker/kat-server.docker.tag.local
 ci/build-and-import-images: docker/kat-server.docker.tag.remote
 ci/build-and-import-images: docker/base-envoy.docker.tag.local
 ci/build-and-import-images: $(tools/k3d)
-	@printf "$(CYN)==> $(GRN)Importing images into k3d cluster$(END)\n"
+	@printf "$(CYN)==> $(GRN)Importing built images into k3d cluster$(END)\n"
 	$(tools/k3d) image import \
 		$$(sed -n 2p docker/$(LCNAME).docker.tag.local) \
 		$$(sed -n 2p docker/$(LCNAME).docker.tag.remote) \
@@ -61,6 +68,12 @@ ci/build-and-import-images: $(tools/k3d)
 		$$(sed -n 2p docker/kat-client.docker.tag.remote) \
 		$$(sed -n 2p docker/kat-server.docker.tag.local) \
 		$$(sed -n 2p docker/kat-server.docker.tag.remote)
+	@printf "$(CYN)==> $(GRN)Pulling and importing external images into k3d cluster$(END)\n"
+	@for img in $(CI_EXTERNAL_IMAGES); do \
+		printf "$(CYN)  -> $(GRN)Pulling $$img$(END)\n"; \
+		docker pull $$img || true; \
+	done
+	$(tools/k3d) image import $(CI_EXTERNAL_IMAGES)
 .PHONY: ci/build-and-import-images
 
 # Python integration test environment for CI (no registry required)
