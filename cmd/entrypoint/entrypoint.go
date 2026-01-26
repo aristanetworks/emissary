@@ -154,6 +154,8 @@ func Main(ctx context.Context, Version string, args ...string) error {
 		return ambex.Main(ctx, Version, usage.PercentUsed, fastpathCh,
 			"--ads-listen-network", "unix",
 			"--ads-listen-address", "/tmp/xds.sock",
+			"--sds-listen-network", "unix",
+			"--sds-listen-address", "/tmp/sds.sock",
 			GetEnvoyDir())
 	})
 
