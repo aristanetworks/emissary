@@ -119,6 +119,60 @@ class V3TLSContext(Dict):
         src: EnvoyCoreSource = {"filename": value}
         validation[key] = src
 
+    def update_tls_certificate_sds(self, sds_name: str) -> None:
+        """Update certificate using SDS reference instead of file path"""
+        common = self.get_common()
+
+        # For SDS, use tls_certificate_sds_secret_configs instead of tls_certificates
+        sds_configs = common.setdefault("tls_certificate_sds_secret_configs", [])
+
+        # Only add the SDS config once (both cert and key share the same secret)
+        if not any(cfg.get("name") == sds_name for cfg in sds_configs):
+            sds_config = {
+                "name": sds_name,
+                "sds_config": {
+                    # Use api_config_source for secret discovery (separate stream from ADS)
+                    "api_config_source": {
+                        "api_type": "GRPC",
+                        "transport_api_version": "V3",
+                        "grpc_services": [
+                            {
+                                "envoy_grpc": {
+                                    "cluster_name": "sds_cluster"
+                                }
+                            }
+                        ],
+                    },
+                    "resource_api_version": "V3",
+                },
+            }
+            sds_configs.append(sds_config)
+
+    def update_validation_context_sds(self, sds_name: str) -> None:
+        """Update validation context using SDS reference"""
+        common = self.get_common()
+
+        # For SDS validation context, use validation_context_sds_secret_config
+        sds_config = {
+            "name": sds_name,
+            "sds_config": {
+                # Use api_config_source for secret discovery (separate stream from ADS)
+                "api_config_source": {
+                    "api_type": "GRPC",
+                    "transport_api_version": "V3",
+                    "grpc_services": [
+                        {
+                            "envoy_grpc": {
+                                "cluster_name": "sds_cluster"
+                            }
+                        }
+                    ],
+                },
+                "resource_api_version": "V3",
+            },
+        }
+        common["validation_context_sds_secret_config"] = sds_config
+
     def add_context(self, ctx: IRTLSContext) -> None:
         if TYPE_CHECKING:
             # This is needed because otherwise self.__setitem__ confuses things.
@@ -127,14 +181,35 @@ class V3TLSContext(Dict):
         if ctx.is_fallback:
             self.is_fallback = True
 
-        for secretinfokey, handler, hkey in [
-            ("cert_chain_file", self.update_cert_zero, "certificate_chain"),
-            ("private_key_file", self.update_cert_zero, "private_key"),
-            ("cacert_chain_file", self.update_validation, "trusted_ca"),
-            ("crl_file", self.update_validation, "crl"),
-        ]:
-            if secretinfokey in ctx["secret_info"]:
-                handler(hkey, ctx["secret_info"][secretinfokey])
+        # Check if SDS mode is enabled
+        use_sds = getattr(ctx, "use_sds", False)
+
+        if use_sds:
+            # SDS mode - reference secrets by name instead of file path
+            # For TLS certificates (cert + key together), use tls_certificate_sds_secret_configs
+            # Only generate SDS config if we have valid cert and key file paths
+            # (indicates the secret was successfully resolved)
+            if "sds_cert_name" in ctx["secret_info"] and ctx["secret_info"].get("cert_chain_file") and ctx["secret_info"].get("private_key_file"):
+                self.update_tls_certificate_sds(ctx["secret_info"]["sds_cert_name"])
+
+            # For validation context (CA cert), use validation_context_sds_secret_config
+            # Only generate SDS config if we have a valid cacert_chain_file path
+            # (indicates the secret was successfully resolved)
+            if "sds_cacert_name" in ctx["secret_info"] and ctx["secret_info"].get("cacert_chain_file"):
+                self.update_validation_context_sds(ctx["secret_info"]["sds_cacert_name"])
+
+            # Note: CRL is not yet supported via SDS in this implementation
+            # It would need to be combined with the validation context SDS config
+        else:
+            # File mode - existing behavior
+            for secretinfokey, handler, hkey in [
+                ("cert_chain_file", self.update_cert_zero, "certificate_chain"),
+                ("private_key_file", self.update_cert_zero, "private_key"),
+                ("cacert_chain_file", self.update_validation, "trusted_ca"),
+                ("crl_file", self.update_validation, "crl"),
+            ]:
+                if secretinfokey in ctx["secret_info"]:
+                    handler(hkey, ctx["secret_info"][secretinfokey])
 
         for ctxkey, handler, hkey in [
             ("alpn_protocols", self.update_alpn, "alpn_protocols"),

@@ -16,6 +16,7 @@ import (
 	"github.com/datawire/dlib/dlog"
 	"github.com/emissary-ingress/emissary/v3/pkg/acp"
 	"github.com/emissary-ingress/emissary/v3/pkg/ambex"
+	v3tls "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/emissary-ingress/emissary/v3/pkg/debug"
 	ecp_v3_cache "github.com/emissary-ingress/emissary/v3/pkg/envoy-control-plane/cache/v3"
 	"github.com/emissary-ingress/emissary/v3/pkg/gateway"
@@ -390,8 +391,10 @@ func (sh *SnapshotHolder) K8sUpdate(
 
 	endpointsChanged := false
 	dispatcherChanged := false
+	secretsChanged := false
 	var endpoints *ambex.Endpoints
 	var dispSnapshot *ecp_v3_cache.Snapshot
+	var sdsSecrets map[string]*v3tls.Secret
 	changed, err := func() (bool, error) {
 		dlog.Debugf(ctx, "[WATCHER]: processing cluster changes detected by the kubernetes watcher")
 		sh.mutex.Lock()
@@ -496,6 +499,10 @@ func (sh *SnapshotHolder) K8sUpdate(
 				if sh.endpointRoutingInfo.endpointWatches[key] || sh.dispatcher.IsWatched(delta.Namespace, delta.Name) {
 					endpointsChanged = true
 				}
+			} else if delta.Kind == "Secret" {
+				// Secrets changed - we'll need to update SDS if enabled
+				secretsChanged = true
+				endpointsOnly = false
 			} else {
 				endpointsOnly = false
 			}
@@ -509,6 +516,30 @@ func (sh *SnapshotHolder) K8sUpdate(
 		}
 		if !endpointsOnly {
 			sh.snapshotChangeCount += 1
+		}
+
+		// Build SDS secrets if SDS is enabled
+		// Always build the complete snapshot to ensure all secrets are available
+		if IsSDSEnabled() {
+			sdsSecrets = make(map[string]*v3tls.Secret)
+			// Use Secrets (only referenced secrets) not K8sSecrets (all secrets)
+			// because in ADS mode, the control plane requires exact match between
+			// requested secrets and snapshot contents (superset check)
+			for _, secret := range sh.k8sSnapshot.Secrets {
+				sdsSecret, err := BuildSDSSecret(secret, secret.GetNamespace(), secret.GetName())
+				if err != nil {
+					// Log at info level to help debug which secrets are being skipped
+					dlog.Infof(ctx, "[WATCHER]: Skipping secret %s/%s for SDS: %v", secret.GetNamespace(), secret.GetName(), err)
+					continue
+				}
+				sdsName := SecretNameToSDS(secret.GetNamespace(), secret.GetName())
+				sdsSecrets[sdsName] = sdsSecret
+			}
+			secretNames := make([]string, 0, len(sdsSecrets))
+			for name := range sdsSecrets {
+				secretNames = append(secretNames, name)
+			}
+			dlog.Infof(ctx, "[WATCHER]: Built %d SDS secrets: %v", len(sdsSecrets), secretNames)
 		}
 
 		if endpointsChanged || dispatcherChanged {
@@ -547,10 +578,14 @@ func (sh *SnapshotHolder) K8sUpdate(
 		return changed, err
 	}
 
-	if endpointsChanged || dispatcherChanged {
+	if endpointsChanged || dispatcherChanged || secretsChanged || (IsSDSEnabled() && sdsSecrets != nil) {
+		if IsSDSEnabled() && sdsSecrets != nil {
+			dlog.Infof(ctx, "[WATCHER]: Sending fastpath update with %d SDS secrets", len(sdsSecrets))
+		}
 		fastpath := &ambex.FastpathSnapshot{
 			Endpoints: endpoints,
 			Snapshot:  dispSnapshot,
+			Secrets:   sdsSecrets,
 		}
 		fastpathProcessor(ctx, fastpath)
 	}

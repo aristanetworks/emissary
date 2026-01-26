@@ -280,6 +280,13 @@ func IsKnativeEnabled() bool {
 	return strings.ToLower(env("AMBASSADOR_KNATIVE_SUPPORT", "")) == "true"
 }
 
+// IsSDSEnabled checks if SDS (Secret Discovery Service) is enabled.
+// When enabled, secrets are delivered via SDS instead of file paths,
+// allowing certificate rotation without listener draining.
+func IsSDSEnabled() bool {
+	return strings.ToLower(env("AMBASSADOR_ENABLE_SDS", "false")) == "true"
+}
+
 // getHealthCheckHost will return address that the health check server will bind to.
 // If not provided it will default to all interfaces (`0.0.0.0`).
 func getHealthCheckHost() string {
