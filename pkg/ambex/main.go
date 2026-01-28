@@ -211,6 +211,11 @@ func (h HasherV3) ID(node *v3core.Node) string {
 func runManagementServer(ctx context.Context, serverv3 ecp_v3_server.Server, adsNetwork, adsAddress string) error {
 	grpcServer := grpc.NewServer()
 
+	// If using Unix socket, remove any existing socket file first
+	if adsNetwork == "unix" {
+		os.Remove(adsAddress)
+	}
+
 	lis, err := net.Listen(adsNetwork, adsAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)

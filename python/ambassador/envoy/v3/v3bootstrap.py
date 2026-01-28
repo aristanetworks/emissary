@@ -51,11 +51,9 @@ class V3Bootstrap(dict):
                                 {
                                     "endpoint": {
                                         "address": {
-                                            "socket_address": {
-                                                # this should be kept in-sync with entrypoint.sh `ambex --ads-listen-address=...`
-                                                "address": "127.0.0.1",
-                                                "port_value": 8003,
-                                                "protocol": "TCP",
+                                            "pipe": {
+                                                # this should be kept in-sync with entrypoint.go ambex --ads-listen-address
+                                                "path": "/tmp/xds.sock"
                                             }
                                         }
                                     }
