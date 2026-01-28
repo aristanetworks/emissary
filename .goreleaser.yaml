@@ -18,6 +18,8 @@ builds:
   - id: busyambassador
     main: ./cmd/busyambassador
     binary: busyambassador
+    flags:
+      - -trimpath
     env:
       - CGO_ENABLED=0
     goos:
