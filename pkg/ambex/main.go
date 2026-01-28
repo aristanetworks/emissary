@@ -99,12 +99,14 @@ import (
 	_ "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/extensions/filters/network/http_connection_manager/v3"
 	_ "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/extensions/filters/network/tcp_proxy/v3"
 	_ "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/extensions/transport_sockets/quic/v3"
+	v3tls "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/extensions/transport_sockets/tls/v3"
 	v3cluster "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/cluster/v3"
 	v3discovery "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/discovery/v3"
 	v3endpoint "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/endpoint/v3"
 	v3listener "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/listener/v3"
 	v3route "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/route/v3"
 	v3runtime "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/runtime/v3"
+	v3secret "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/service/secret/v3"
 
 	// first-party libraries
 	"github.com/datawire/dlib/dgroup"
@@ -117,6 +119,9 @@ type Args struct {
 
 	adsNetwork string
 	adsAddress string
+
+	sdsNetwork string
+	sdsAddress string
 
 	dirs []string
 
@@ -137,6 +142,9 @@ func parseArgs(ctx context.Context, rawArgs ...string) (*Args, error) {
 	// TODO(lukeshu): Consider changing the default here so we don't need to put it in entrypoint.sh
 	flagset.StringVar(&args.adsNetwork, "ads-listen-network", "tcp", "network for ADS to listen on")
 	flagset.StringVar(&args.adsAddress, "ads-listen-address", ":18000", "address (on --ads-listen-network) for ADS to listen on")
+
+	flagset.StringVar(&args.sdsNetwork, "sds-listen-network", "unix", "network for SDS to listen on")
+	flagset.StringVar(&args.sdsAddress, "sds-listen-address", "/tmp/sds.sock", "address (on --sds-listen-network) for SDS to listen on")
 
 	var legacyAdsPort uint
 	flagset.UintVar(&legacyAdsPort, "ads", 0, "port number for ADS to listen on--deprecated, use --ads-listen-address=:1234 instead")
@@ -211,6 +219,11 @@ func (h HasherV3) ID(node *v3core.Node) string {
 func runManagementServer(ctx context.Context, serverv3 ecp_v3_server.Server, adsNetwork, adsAddress string) error {
 	grpcServer := grpc.NewServer()
 
+	// If using Unix socket, remove any existing socket file first
+	if adsNetwork == "unix" {
+		os.Remove(adsAddress)
+	}
+
 	lis, err := net.Listen(adsNetwork, adsAddress)
 	if err != nil {
 		return fmt.Errorf("failed to listen: %w", err)
@@ -223,7 +236,33 @@ func runManagementServer(ctx context.Context, serverv3 ecp_v3_server.Server, ads
 	v3route.RegisterRouteDiscoveryServiceServer(grpcServer, serverv3)
 	v3listener.RegisterListenerDiscoveryServiceServer(grpcServer, serverv3)
 
-	dlog.Infof(ctx, "Listening on %s:%s", adsNetwork, adsAddress)
+	dlog.Infof(ctx, "ADS server listening on %s:%s", adsNetwork, adsAddress)
+
+	sc := &dhttp.ServerConfig{
+		Handler: grpcServer,
+	}
+	return sc.Serve(ctx, lis)
+}
+
+// runSDSServer starts a separate SDS-only server with ads=false.
+// This allows SDS to work independently from the main ADS stream.
+func runSDSServer(ctx context.Context, serverv3 ecp_v3_server.Server, sdsNetwork, sdsAddress string) error {
+	grpcServer := grpc.NewServer()
+
+	// If using Unix socket, remove any existing socket file first
+	if sdsNetwork == "unix" {
+		os.Remove(sdsAddress)
+	}
+
+	lis, err := net.Listen(sdsNetwork, sdsAddress)
+	if err != nil {
+		return fmt.Errorf("failed to listen on SDS socket: %w", err)
+	}
+
+	// Only register SDS service on this server
+	v3secret.RegisterSecretDiscoveryServiceServer(grpcServer, serverv3)
+
+	dlog.Infof(ctx, "SDS server listening on %s:%s", sdsNetwork, sdsAddress)
 
 	sc := &dhttp.ServerConfig{
 		Handler: grpcServer,
@@ -368,15 +407,18 @@ func csDump(ctx context.Context, snapdirPath string, numsnaps int, generation in
 }
 
 // Get an updated snapshot going.
+
 func update(
 	ctx context.Context,
 	snapdirPath string,
 	numsnaps int,
 	edsBypass bool,
 	configv3 ecp_v3_cache.SnapshotCache,
+	sdsConfigv3 ecp_v3_cache.SnapshotCache,
 	generation *int,
 	dirs []string,
 	edsEndpointsV3 map[string]*v3endpointconfig.ClusterLoadAssignment,
+	sdsSecretsV3 map[string]*v3tls.Secret,
 	fastpathSnapshot *FastpathSnapshot,
 	updates chan<- Update,
 ) error {
@@ -385,6 +427,7 @@ func update(
 	routesv3 := []ecp_cache_types.Resource{}    // v3.RouteConfiguration
 	listenersv3 := []ecp_cache_types.Resource{} // v3.Listener
 	runtimesv3 := []ecp_cache_types.Resource{}  // v3.Runtime
+	secretsv3 := []ecp_cache_types.Resource{}   // v3.Secret
 
 	var filenames []string
 
@@ -490,6 +533,16 @@ func update(
 	// cluster exists but currently has no endpoints.
 	endpointsv3 := JoinEdsClustersV3(ctx, clustersv3, edsEndpointsV3, edsBypass)
 
+	// Populate secrets from the SDS secrets map
+	// With api_config_source mode, Envoy only requests secrets it needs,
+	// so we can include all available secrets in the snapshot without filtering
+	for _, secret := range sdsSecretsV3 {
+		secretsv3 = append(secretsv3, secret)
+	}
+	if len(sdsSecretsV3) > 0 {
+		dlog.Infof(ctx, "Adding %d SDS secrets to Envoy snapshot", len(sdsSecretsV3))
+	}
+
 	// Create a new configuration snapshot from everything we have just loaded from disk.
 	curgen := *generation
 	*generation++
@@ -502,6 +555,7 @@ func update(
 		ecp_v3_resource.RouteType:    routesv3,
 		ecp_v3_resource.ListenerType: listenersv3,
 		ecp_v3_resource.RuntimeType:  runtimesv3,
+		ecp_v3_resource.SecretType:   secretsv3,
 	}
 
 	snapshot, err := ecp_v3_cache.NewSnapshot(version, snapshotResources)
@@ -526,6 +580,24 @@ func update(
 	update := Update{version, func() error {
 		dlog.Debugf(ctx, "Accepting snapshot %s", version)
 
+		// Create and update the SDS snapshot FIRST with only secrets
+		// This ensures secrets are available before the main ADS config that references them
+		// This is for the dedicated SDS server with ads=false
+		sdsSnapshotResources := map[ecp_v3_resource.Type][]ecp_cache_types.Resource{
+			ecp_v3_resource.SecretType: secretsv3,
+		}
+		sdsSnapshot, err := ecp_v3_cache.NewSnapshot(version, sdsSnapshotResources)
+		if err != nil {
+			dlog.Errorf(ctx, "SDS Snapshot error: %v", err)
+			return fmt.Errorf("SDS Snapshot error %q", err)
+		}
+
+		err = sdsConfigv3.SetSnapshot(ctx, "test-id", sdsSnapshot)
+		if err != nil {
+			return fmt.Errorf("SDS Snapshot error %q for %+v", err, sdsSnapshot)
+		}
+
+		// Update the main ADS cache AFTER SDS
 		err = configv3.SetSnapshot(ctx, "test-id", snapshot)
 		if err != nil {
 			return fmt.Errorf("v3 Snapshot error %q for %+v", err, snapshot)
@@ -676,7 +748,16 @@ func Main(
 	configv3 := ecp_v3_cache.NewSnapshotCache(true, HasherV3{}, logAdapterV3{logAdapterBase{"V3"}})
 	serverv3 := ecp_v3_server.NewServer(ctx, configv3, logAdapterV3{logAdapterBase{"V3"}})
 
+	// Create a separate SDS cache with ads=false for dedicated SDS server
+	sdsConfigv3 := ecp_v3_cache.NewSnapshotCache(false, HasherV3{}, logAdapterV3{logAdapterBase{"SDS"}})
+	sdsServerv3 := ecp_v3_server.NewServer(ctx, sdsConfigv3, logAdapterV3{logAdapterBase{"SDS"}})
+
 	grp := dgroup.NewGroup(ctx, dgroup.GroupConfig{})
+
+	// Start SDS server first to ensure it's ready before ADS server
+	grp.Go("sds-server", func(ctx context.Context) error {
+		return runSDSServer(ctx, sdsServerv3, args.sdsNetwork, args.sdsAddress)
+	})
 
 	grp.Go("management-server", func(ctx context.Context) error {
 		return runManagementServer(ctx, serverv3, args.adsNetwork, args.adsAddress)
@@ -700,6 +781,7 @@ func Main(
 		generation := 0
 		var fastpathSnapshot *FastpathSnapshot
 		edsEndpointsV3 := map[string]*v3endpointconfig.ClusterLoadAssignment{}
+		sdsSecretsV3 := map[string]*v3tls.Secret{}
 
 		// We always start by updating with a totally empty snapshot.
 		//
@@ -711,9 +793,11 @@ func Main(
 			args.numsnaps,
 			args.edsBypass,
 			configv3,
+			sdsConfigv3,
 			&generation,
 			args.dirs,
 			edsEndpointsV3,
+			sdsSecretsV3,
 			fastpathSnapshot,
 			updates,
 		)
@@ -732,9 +816,11 @@ func Main(
 					args.numsnaps,
 					args.edsBypass,
 					configv3,
+					sdsConfigv3,
 					&generation,
 					args.dirs,
 					edsEndpointsV3,
+					sdsSecretsV3,
 					fastpathSnapshot,
 					updates,
 				)
@@ -742,9 +828,12 @@ func Main(
 					return err
 				}
 			case fpSnap := <-fastpathCh:
-				// Fastpath update. Grab new endpoints and update.
+				// Fastpath update. Grab new endpoints and secrets, then update.
 				if fpSnap.Endpoints != nil {
 					edsEndpointsV3 = fpSnap.Endpoints.ToMap_v3()
+				}
+				if fpSnap.Secrets != nil {
+					sdsSecretsV3 = fpSnap.Secrets
 				}
 				fastpathSnapshot = fpSnap
 				err := update(
@@ -753,9 +842,11 @@ func Main(
 					args.numsnaps,
 					args.edsBypass,
 					configv3,
+					sdsConfigv3,
 					&generation,
 					args.dirs,
 					edsEndpointsV3,
+					sdsSecretsV3,
 					fastpathSnapshot,
 					updates,
 				)
@@ -770,9 +861,11 @@ func Main(
 					args.numsnaps,
 					args.edsBypass,
 					configv3,
+					sdsConfigv3,
 					&generation,
 					args.dirs,
 					edsEndpointsV3,
+					sdsSecretsV3,
 					fastpathSnapshot,
 					updates,
 				)
