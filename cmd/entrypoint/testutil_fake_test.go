@@ -59,9 +59,8 @@ type Fake struct {
 	group  *dgroup.Group
 	cancel context.CancelFunc
 
-	k8sSource       *fakeK8sSource
-	watcher         *fakeWatcher
-	istioCertSource *fakeIstioCertSource
+	k8sSource *fakeK8sSource
+	watcher   *fakeWatcher
 	// This group of fields are used to store kubernetes resources and consul endpoint data and
 	// provide explicit control over when changes to that data are sent to the control plane.
 	k8sStore       *K8sStore
@@ -125,7 +124,6 @@ func NewFake(t *testing.T, config FakeConfig) *Fake {
 
 	fake.k8sSource = &fakeK8sSource{fake: fake, store: k8sStore}
 	fake.watcher = &fakeWatcher{fake: fake, store: consulStore}
-	fake.istioCertSource = &fakeIstioCertSource{}
 
 	return fake
 }
@@ -270,7 +268,6 @@ func (f *Fake) runWatcher(ctx context.Context) error {
 		f.k8sSource,
 		queries,
 		f.watcher.Watch, // watchConsulFunc
-		f.istioCertSource,
 		f.notifySnapshot,
 		f.notifyFastpath,
 		f.ambassadorMeta,
@@ -437,11 +434,6 @@ func (f *Fake) ConsulEndpoint(datacenter, service, address string, port int, tag
 	f.consulNotifier.Changed()
 }
 
-// SendIstioCertUpdate sends the supplied Istio certificate update.
-func (f *Fake) SendIstioCertUpdate(update IstioCertUpdate) {
-	f.istioCertSource.updateChannel <- update
-}
-
 type fakeK8sSource struct {
 	fake  *Fake
 	store *K8sStore
@@ -548,16 +540,4 @@ type fakeStopper struct {
 
 func (f *fakeStopper) Stop() {
 	f.stop()
-}
-
-type fakeIstioCertSource struct {
-	updateChannel chan IstioCertUpdate
-}
-
-func (src *fakeIstioCertSource) Watch(ctx context.Context) (IstioCertWatcher, error) {
-	src.updateChannel = make(chan IstioCertUpdate)
-
-	return &istioCertWatcher{
-		updateChannel: src.updateChannel,
-	}, nil
 }

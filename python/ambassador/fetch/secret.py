@@ -15,16 +15,12 @@ class SecretProcessor(ManagedKubernetesProcessor):
     KNOWN_TYPES = [
         "Opaque",
         "kubernetes.io/tls",
-        "istio.io/key-and-cert",
     ]
 
     KNOWN_DATA_KEYS = [
         "tls.crt",  # type="kubernetes.io/tls"
         "tls.key",  # type="kubernetes.io/tls"
         "user.key",  # type="Opaque", used for AES ACME
-        "cert-chain.pem",  # type="istio.io/key-and-cert"
-        "key.pem",  # type="istio.io/key-and-cert"
-        "root-cert.pem",  # type="istio.io/key-and-cert"
         "crl.pem",  # type="Opaque", used for TLS CRL
     ]
 

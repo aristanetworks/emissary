@@ -157,11 +157,9 @@ class IRTLSContext(IRResource):
         namespace = self.namespace
 
         # You can't just always allow '.' in a secret name to span namespaces, or you end up with
-        # https://github.com/datawire/ambassador/issues/1255, which is particularly problematic
-        # because (https://github.com/datawire/ambassador/issues/1475) Istio likes to use '.' in
-        # mTLS secret names. So we default to allowing the '.' as a namespace separator, but
-        # you can set secret_namespacing to False in a TLSContext or tls_secret_namespacing False
-        # in the Ambassador module's defaults to prevent that.
+        # https://github.com/datawire/ambassador/issues/1255. So we default to allowing the '.'
+        # as a namespace separator, but you can set secret_namespacing to False in a TLSContext
+        # or tls_secret_namespacing False in the Ambassador module's defaults to prevent that.
 
         secret_namespacing = self.lookup(
             "secret_namespacing", True, default_key="tls_secret_namespacing"

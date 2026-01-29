@@ -733,10 +733,6 @@ class SecretInfo:
                 return None
 
             cert = None
-        elif secret_type == "istio.io/key-and-cert":
-            resource.ir.logger.error(
-                f"{resource.kind} {resource.name}: found data but handler for istio key not finished yet"
-            )
 
         return SecretInfo(
             secret_name, namespace, secret_type, tls_crt=tls_crt, tls_key=tls_key, user_key=user_key

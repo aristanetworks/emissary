@@ -226,7 +226,7 @@ spec:
     command:
     - /bin/sh
     - -c
-    image: istio/kubectl:1.5.10
+    image: alpine/kubectl:latest
     imagePullPolicy: IfNotPresent
     name: wait-for-apiext
     securityContext:

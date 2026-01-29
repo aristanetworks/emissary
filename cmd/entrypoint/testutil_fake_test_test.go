@@ -10,7 +10,6 @@ import (
 	"github.com/emissary-ingress/emissary/v3/cmd/entrypoint"
 	v3bootstrap "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/config/bootstrap/v3"
 	v3 "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/type/v3"
-	"github.com/emissary-ingress/emissary/v3/pkg/kates"
 	"github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
 
@@ -274,54 +273,4 @@ func LogJSON(t testing.TB, obj interface{}) {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	require.NoError(t, err)
 	t.Log(string(bytes))
-}
-
-func TestFakeIstioCert(t *testing.T) {
-	// Don't ask for the EnvoyConfig yet, 'cause we don't use it.
-	f := entrypoint.RunFake(t, entrypoint.FakeConfig{EnvoyConfig: false}, nil)
-	f.AutoFlush(true)
-
-	assert.NoError(t, f.UpsertFile("testdata/tls-snap.yaml"))
-
-	// t.Log(f.GetSnapshotString())
-
-	snapshot, err := f.GetSnapshot(AnySnapshot)
-	require.NoError(t, err)
-	k := snapshot.Kubernetes
-
-	if len(k.Secrets) != 1 {
-		t.Errorf("needed 1 secret, got %d", len(k.Secrets))
-	}
-
-	istioSecret := kates.Secret{
-		TypeMeta: kates.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
-		ObjectMeta: kates.ObjectMeta{
-			Name:      "test-istio-secret",
-			Namespace: "default",
-		},
-		Type: kates.SecretTypeTLS,
-		Data: map[string][]byte{
-			"tls.crt": k.Secrets[0].Data["tls.crt"],
-			"tls.key": k.Secrets[0].Data["tls.key"],
-		},
-	}
-
-	f.SendIstioCertUpdate(entrypoint.IstioCertUpdate{
-		Op:        "update",
-		Name:      "test-istio-secret",
-		Namespace: "default",
-		Secret:    &istioSecret,
-	})
-
-	snapshot, err = f.GetSnapshot(AnySnapshot)
-	require.NoError(t, err)
-	k = snapshot.Kubernetes
-	LogJSON(t, k)
-
-	if len(k.Secrets) != 2 {
-		t.Errorf("needed 2 secrets, got %d", len(k.Secrets))
-	}
 }

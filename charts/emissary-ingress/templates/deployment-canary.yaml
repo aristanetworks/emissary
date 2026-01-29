@@ -113,7 +113,7 @@ spec:
       initContainers:
       {{- if and .Values.waitForApiext (eq .Values.waitForApiext.enabled true) }}
       - name: wait-for-apiext
-        image: istio/kubectl:1.5.10
+        image: alpine/kubectl:latest
         imagePullPolicy: IfNotPresent
         {{- with .Values.waitForApiext.securityContext }}
         securityContext:

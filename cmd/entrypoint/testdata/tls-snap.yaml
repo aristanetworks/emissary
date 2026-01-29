@@ -18,13 +18,3 @@ spec:
   hosts:
   - tls-context-host-1
   secret: test-k8s-secret
----
-apiVersion: getambassador.io/v3alpha1
-kind: TLSContext
-metadata:
-  name: istio-context-1
-  namespace: default
-spec:
-  hosts:
-  - tls-context-host-1
-  secret: test-istio-secret

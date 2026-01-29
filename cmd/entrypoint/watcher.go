@@ -73,15 +73,13 @@ func WatchAllTheThings(
 
 	k8sSrc := newK8sSource(client)
 	consulSrc := watchConsul
-	istioCertSrc := newIstioCertSource()
 
 	return watchAllTheThingsInternal(
 		ctx,
 		encoded,
 		k8sSrc,
 		queries,
-		consulSrc, // watchConsulFunc
-		istioCertSrc,
+		consulSrc,      // watchConsulFunc
 		notify,         // snapshotProcessor
 		fastpathUpdate, // fastpathProcessor
 		ambassadorMeta,
@@ -186,7 +184,6 @@ func watchAllTheThingsInternal(
 	k8sSrc K8sSource,
 	queries []kates.Query,
 	watchConsulFunc watchConsulFunc,
-	istioCertSrc IstioCertSource,
 	snapshotProcessor SnapshotProcessor,
 	fastpathProcessor FastpathProcessor,
 	ambassadorMeta *snapshot.AmbassadorMetaInfo,
@@ -210,9 +207,6 @@ func watchAllTheThingsInternal(
 	// kubernetes, i.e. we watch the services defined in Mappings that are configured to use a
 	// consul resolver. We use the ConsulResolver that a given Mapping is configured with to find
 	// the datacenter to query.
-	//
-	// The filesystem datasource is for istio secrets. XXX fill in more
-
 	grp := dgroup.NewGroup(ctx, dgroup.GroupConfig{})
 
 	// Each time the wathcerLoop wakes up, it assembles updates from whatever source woke it up into
@@ -220,7 +214,7 @@ func watchAllTheThingsInternal(
 	// consider ambassador "booted" and if so passes the updated view along to its output (the
 	// SnapshotProcessor).
 
-	// Setup our three sources of ambassador inputs: kubernetes, consul, and the filesystem. Each of
+	// Setup our two sources of ambassador inputs: kubernetes and consul. Each of
 	// these have interfaces that enable us to run with the "real" implementation or a mock
 	// implementation for our Fake test harness.
 	k8sWatcher, err := k8sSrc.Watch(ctx, queries...)
@@ -229,11 +223,6 @@ func watchAllTheThingsInternal(
 	}
 	consulWatcher := newConsulWatcher(watchConsulFunc)
 	grp.Go("consul", consulWatcher.run)
-	istioCertWatcher, err := istioCertSrc.Watch(ctx)
-	if err != nil {
-		return err
-	}
-	istio := newIstioCertWatchManager(ctx, istioCertWatcher)
 
 	// SnapshotHolder tracks all the data structures that get updated by the various sources of
 	// information. It also holds the business logic that converts the data as received to a more
@@ -265,13 +254,6 @@ func watchAllTheThingsInternal(
 		for {
 			dlog.Debugf(ctx, "WATCHER: --------")
 
-			// XXX Hack: the istioCertWatchManager needs to reset at the start of the
-			// loop, for now. A better way, I think, will be to instead track deltas in
-			// ReconcileSecrets -- that way we can ditch this crap and Istio-cert changes
-			// that somehow don't generate an actual change will still not trigger a
-			// reconfigure.
-			istio.StartLoop(ctx)
-
 			select {
 			case <-k8sWatcher.Changed():
 				// Kubernetes has some changes, so we need to handle them.
@@ -286,12 +268,6 @@ func watchAllTheThingsInternal(
 			case <-consulWatcher.changed():
 				dlog.Debugf(ctx, "WATCHER: Consul fired")
 				snapshots.ConsulUpdate(ctx, consulWatcher, fastpathProcessor)
-				out = notifyCh
-			case icertUpdate := <-istio.Changed():
-				// The Istio cert has some changes, so we need to handle them.
-				if _, err := snapshots.IstioUpdate(ctx, istio, icertUpdate); err != nil {
-					return err
-				}
 				out = notifyCh
 			case out <- snapshots:
 				out = nil
@@ -322,8 +298,6 @@ type SnapshotHolder struct {
 	// they always represent the entire state of their respective worlds.
 	k8sSnapshot    *snapshot.KubernetesSnapshot
 	consulSnapshot *snapshot.ConsulSnapshot
-	// XXX: you would expect there to be an analogous snapshot for istio secrets, however the istio
-	// source works by directly munging the k8sSnapshot.
 
 	// The unsentDeltas field tracks the stream of deltas that have occured in between each
 	// kubernetes snapshot. This is a passthrough of the full stream of deltas reported by kates
@@ -573,32 +547,6 @@ func (sh *SnapshotHolder) ConsulUpdate(ctx context.Context, consulWatcher *consu
 		Snapshot:  dispSnapshot,
 	})
 	return true
-}
-
-func (sh *SnapshotHolder) IstioUpdate(ctx context.Context, istio *istioCertWatchManager,
-	icertUpdate IstioCertUpdate) (bool, error) {
-	dbg := debug.FromContext(ctx)
-
-	istioCertUpdateTimer := dbg.Timer("istioCertUpdate")
-	reconcileSecretsTimer := dbg.Timer("reconcileSecrets")
-
-	sh.mutex.Lock()
-	defer sh.mutex.Unlock()
-
-	istioCertUpdateTimer.Time(func() {
-		istio.Update(ctx, icertUpdate, sh.k8sSnapshot)
-	})
-
-	var err error
-	reconcileSecretsTimer.Time(func() {
-		err = ReconcileSecrets(ctx, sh)
-	})
-	if err != nil {
-		return false, err
-	}
-
-	sh.snapshotChangeCount += 1
-	return true, nil
 }
 
 func (sh *SnapshotHolder) Notify(
