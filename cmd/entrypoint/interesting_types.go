@@ -72,9 +72,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 	// - The typename in the map values should be the qualified "${name}.${version}.${group}",
 	//   where "${name} is lowercase+plural.
 	// - If the map value doesn't set a field selector, then `fs` (above) will be used.
-	//
-	// Most of the interestingTypes are static, but it's completely OK to add types based
-	// on runtime considerations, as we do for the KNative stuff.
 	interestingTypes := map[string][]thingToMaybeWatch{
 		// Native Kubernetes types
 		//
@@ -85,13 +82,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 		"EndpointSlices": {{typename: "endpointslices.v1.discovery.k8s.io", fieldselector: endpointFs}},
 		"K8sSecrets":     {{typename: "secrets.v1."}}, // New in Kubernetes 0.16.0 (2015-04-28) (v1beta{1..3} before that)
 		"ConfigMaps":     {{typename: "configmaps.v1.", fieldselector: configMapFs}},
-
-		// Knative types
-		//
-		// Note: These keynames have a "KNative" prefix, to avoid clashing with the standard
-		// "networking.k8s.io" and "extensions" types.
-		"KNativeClusterIngresses": {{typename: "clusteringresses.v1alpha1.networking.internal.knative.dev", ignoreIf: !IsKnativeEnabled()}}, // New in Knative Serving 0.3.0 (2019-01-09)
-		"KNativeIngresses":        {{typename: "ingresses.v1alpha1.networking.internal.knative.dev", ignoreIf: !IsKnativeEnabled()}},        // New in Knative Serving 0.7.0 (2019-06-25)
 
 		// Native Emissary types
 		"AuthServices":                {{typename: "authservices.v3alpha1.getambassador.io"}},

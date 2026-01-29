@@ -1297,10 +1297,6 @@ class IR:
         od["endpoint_routing_envoy_lr_count"] = endpoint_routing_envoy_lr_count
 
         od["cluster_ingress_count"] = 0  # Provided for backward compatibility only.
-        od["knative_ingress_count"] = self.aconf.get_count("knative_ingress")
-
-        od["k8s_ingress_count"] = self.aconf.get_count("k8s_ingress")
-        od["k8s_ingress_class_count"] = self.aconf.get_count("k8s_ingress_class")
 
         extauth = False
         extauth_proto: Optional[str] = None

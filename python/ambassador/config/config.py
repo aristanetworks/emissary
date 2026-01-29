@@ -450,10 +450,6 @@ class Config:
             status = Config.SupportedVersions.get(version, "is not supported")
             if status != "ok":
                 self.post_notice(f"apiVersion {apiVersion} {status}", resource=resource)
-        elif apiVersion.startswith("networking.internal.knative.dev"):
-            # This is not an Ambassador resource, we're trying to parse Knative
-            # here
-            pass
         else:
             return RichStatus.fromError("apiVersion %s unsupported" % apiVersion)
 

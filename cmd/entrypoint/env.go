@@ -276,10 +276,6 @@ func GetSidecarUrl() string {
 	return fmt.Sprintf("%s/%s/watt", GetSidecarHost(), GetSidecarPath())
 }
 
-func IsKnativeEnabled() bool {
-	return strings.ToLower(env("AMBASSADOR_KNATIVE_SUPPORT", "")) == "true"
-}
-
 // getHealthCheckHost will return address that the health check server will bind to.
 // If not provided it will default to all interfaces (`0.0.0.0`).
 func getHealthCheckHost() string {

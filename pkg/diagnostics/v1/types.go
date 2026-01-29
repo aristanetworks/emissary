@@ -422,7 +422,6 @@ type System struct {
 	EnvStatus           *SystemEnvStatus `json:"env_status"`
 	Hostname            string           `json:"hostname"`
 	HrUptime            string           `json:"hr_uptime"`
-	KnativeEnabled      bool             `json:"knative_enabled"`
 	LatestSnapshot      string           `json:"latest_snapshot"`
 	SingleNamespace     bool             `json:"single_namespace"`
 	StatsdEnabled       bool             `json:"statsd_enabled"`

@@ -218,9 +218,6 @@ func canonGVK(rawString string) (canonKind string, canonGroupVersion string, err
 	case "configmap", "configmaps":
 		return "ConfigMap", "v1", nil
 	case "ingress", "ingresses":
-		if strings.HasSuffix(rawVG, ".knative.dev") {
-			return "Ingress", "networking.internal.knative.dev/v1alpha1", nil
-		}
 		return "", "", fmt.Errorf("unsupported resource type: %s", rawVG)
 	// Gateway API
 	case "gatewayclass", "gatewayclasses":
@@ -229,9 +226,6 @@ func canonGVK(rawString string) (canonKind string, canonGroupVersion string, err
 		return "Gateway", "networking.x-k8s.io/v1alpha1", nil
 	case "httproute", "httproutes":
 		return "HTTPRoute", "networking.x-k8s.io/v1alpha1", nil
-	// Knative types
-	case "clusteringress", "clusteringresses":
-		return "ClusterIngress", "networking.internal.knative.dev/v1alpha1", nil
 	// Native Emissary types
 	case "authservice", "authservices":
 		return "AuthService", "getambassador.io/v3alpha1", nil

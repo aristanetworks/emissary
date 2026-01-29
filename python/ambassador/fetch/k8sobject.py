@@ -44,10 +44,6 @@ class KubernetesGVK:
         else:
             return cls(f"getambassador.io/{version}", kind)
 
-    @classmethod
-    def for_knative_networking(cls, kind: str) -> KubernetesGVK:
-        return cls("networking.internal.knative.dev/v1alpha1", kind)
-
 
 @enum.unique
 class KubernetesObjectScope(enum.Enum):

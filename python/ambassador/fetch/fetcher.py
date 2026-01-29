@@ -17,11 +17,9 @@ from .dependency import (
 from .k8sobject import KubernetesGVK, KubernetesObject
 from .k8sprocessor import (
     AggregateKubernetesProcessor,
-    CountingKubernetesProcessor,
     DeduplicatingKubernetesProcessor,
     KubernetesProcessor,
 )
-from .knative import KnativeIngressProcessor
 from .resource import NormalizedResource, ResourceManager
 from .secret import SecretProcessor
 from .service import ServiceProcessor
@@ -55,20 +53,12 @@ class ResourceFetcher:
         self.k8s_processor = DeduplicatingKubernetesProcessor(
             AggregateKubernetesProcessor(
                 [
-                    CountingKubernetesProcessor(
-                        self.aconf,
-                        KubernetesGVK.for_knative_networking("Ingress"),
-                        "knative_ingress",
-                    ),
                     AmbassadorProcessor(self.manager),
                     SecretProcessor(self.manager),
                     ServiceProcessor(self.manager, watch_only=watch_only),
-                    KnativeIngressProcessor(self.manager),
                 ]
             )
         )
-
-        self.alerted_about_labels = False
 
         # Deltas, for managing the cache.
         self.deltas: List[Dict[str, Union[str, Dict[str, str]]]] = []

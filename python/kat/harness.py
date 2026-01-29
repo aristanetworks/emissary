@@ -165,10 +165,6 @@ def is_ingress_class_compatible() -> bool:
     return is_kube_server_client_compatible("IngressClass", "1.18", "1.14")
 
 
-def is_knative_compatible() -> bool:
-    return is_kube_server_client_compatible("Knative", "1.14", "1.14")
-
-
 def get_digest(data: str) -> str:
     s = sha256()
     s.update(data.encode("utf-8"))
@@ -1322,8 +1318,6 @@ class Runner:
 
         # First up: CRDs.
         input_crds = integration_manifests.crd_manifests()
-        if is_knative_compatible():
-            input_crds += integration_manifests.load("knative_serving_crds")
 
         # Strip out all of the schema validation, so that we can test with broken CRDs.
         # (KAT isn't really in the business of testing to be sure that Kubernetes can
@@ -1336,8 +1330,7 @@ class Runner:
         stripped_crds = []
 
         for crd in crds:
-            # Guard against empty CRDs (the KNative files have some blank lines at
-            # the end).
+            # Guard against empty CRDs.
             if not crd:
                 continue
 

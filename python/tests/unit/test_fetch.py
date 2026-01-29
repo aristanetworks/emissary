@@ -19,7 +19,6 @@ from ambassador.fetch import ResourceFetcher
 from ambassador.fetch.ambassador import AmbassadorProcessor
 from ambassador.fetch.dependency import (
     DependencyManager,
-    IngressClassesDependency,
     SecretDependency,
     ServiceDependency,
 )
@@ -44,60 +43,6 @@ def k8s_object_from_yaml(yaml: str) -> KubernetesObject:
     return KubernetesObject(parse_yaml(yaml)[0])
 
 
-valid_knative_ingress = k8s_object_from_yaml(
-    """
----
-apiVersion: networking.internal.knative.dev/v1alpha1
-kind: Ingress
-metadata:
-  annotations:
-    getambassador.io/ambassador-id: webhook
-    networking.knative.dev/ingress.class: ambassador.ingress.networking.knative.dev
-  generation: 2
-  labels:
-    serving.knative.dev/route: helloworld-go
-    serving.knative.dev/routeNamespace: test
-    serving.knative.dev/service: helloworld-go
-  name: helloworld-go
-  namespace: test
-spec:
-  rules:
-  - hosts:
-    - helloworld-go.test.svc.cluster.local
-    http:
-      paths:
-      - retries:
-          attempts: 3
-          perTryTimeout: 10m0s
-        splits:
-        - appendHeaders:
-            Knative-Serving-Namespace: test
-            Knative-Serving-Revision: helloworld-go-qf94m
-          percent: 100
-          serviceName: helloworld-go-qf94m
-          serviceNamespace: test
-          servicePort: 80
-        timeout: 10m0s
-    visibility: ClusterLocal
-  visibility: ExternalIP
-status:
-  loadBalancer:
-    ingress:
-    - domainInternal: ambassador.ambassador-webhook.svc.cluster.local
-  observedGeneration: 2
-"""
-)
-
-valid_ingress_class = k8s_object_from_yaml(
-    """
-apiVersion: networking.k8s.io/v1
-kind: IngressClass
-metadata:
-  name: external-lb
-spec:
-  controller: getambassador.io/ingress-controller
-"""
-)
 
 valid_mapping = k8s_object_from_yaml(
     """
@@ -129,6 +74,20 @@ spec:
 """
 )
 
+valid_tcpmapping = k8s_object_from_yaml(
+    """
+---
+apiVersion: getambassador.io/v3alpha1
+kind: TCPMapping
+metadata:
+  name: test-tcp
+  namespace: default
+spec:
+  port: 8088
+  service: test-tcp.default
+"""
+)
+
 
 class TestKubernetesGVK:
     def test_legacy(self):
@@ -152,33 +111,16 @@ class TestKubernetesGVK:
 
 class TestKubernetesObject:
     def test_valid(self):
-        assert valid_knative_ingress.gvk == KubernetesGVK.for_knative_networking("Ingress")
-        assert valid_knative_ingress.namespace == "test"
-        assert valid_knative_ingress.name == "helloworld-go"
-        assert valid_knative_ingress.scope == KubernetesObjectScope.NAMESPACE
-        assert valid_knative_ingress.key == KubernetesObjectKey(
-            valid_knative_ingress.gvk, "test", "helloworld-go"
+        assert valid_mapping.gvk.kind == "Mapping"
+        assert valid_mapping.gvk.api_version == "getambassador.io/v3alpha1"
+        assert valid_mapping.namespace == "default"
+        assert valid_mapping.name == "test"
+        assert valid_mapping.scope == KubernetesObjectScope.NAMESPACE
+        assert valid_mapping.key == KubernetesObjectKey(
+            valid_mapping.gvk, "default", "test"
         )
-        assert valid_knative_ingress.generation == 2
-        assert len(valid_knative_ingress.annotations) == 2
-        assert valid_knative_ingress.ambassador_id == "webhook"
-        assert len(valid_knative_ingress.labels) == 3
-        assert (
-            valid_knative_ingress.spec["rules"][0]["hosts"][0]
-            == "helloworld-go.test.svc.cluster.local"
-        )
-        assert valid_knative_ingress.status["observedGeneration"] == 2
-
-    def test_valid_cluster_scoped(self):
-        assert valid_ingress_class.name == "external-lb"
-        assert valid_ingress_class.scope == KubernetesObjectScope.CLUSTER
-        assert valid_ingress_class.key == KubernetesObjectKey(
-            valid_ingress_class.gvk, None, "external-lb"
-        )
-        assert valid_ingress_class.key.namespace is None
-
-        with pytest.raises(AttributeError):
-            valid_ingress_class.namespace
+        assert valid_mapping.spec["prefix"] == "/test/"
+        assert valid_mapping.spec["service"] == "test.default"
 
     def test_invalid(self):
         with pytest.raises(ValueError, match="not a valid Kubernetes object"):
@@ -290,7 +232,7 @@ class TestAggregateKubernetesProcessor:
 
         p = AggregateKubernetesProcessor(
             [
-                CountingKubernetesProcessor(aconf, valid_knative_ingress.gvk, "test_1"),
+                CountingKubernetesProcessor(aconf, valid_tcpmapping.gvk, "test_1"),
                 CountingKubernetesProcessor(aconf, valid_mapping.gvk, "test_2"),
                 fp,
             ]
@@ -298,11 +240,11 @@ class TestAggregateKubernetesProcessor:
 
         assert len(p.kinds()) == 2
 
-        assert p.try_process(valid_knative_ingress)
+        assert p.try_process(valid_mapping)
         assert p.try_process(valid_mapping)
 
-        assert aconf.get_count("test_1") == 1
-        assert aconf.get_count("test_2") == 1
+        assert aconf.get_count("test_1") == 0
+        assert aconf.get_count("test_2") == 2
 
         p.finalize()
         assert fp.finalized, "Aggregate processor did not call finalizers"
@@ -331,7 +273,6 @@ class TestCountingKubernetesProcessor:
 
         assert p.try_process(valid_mapping), "Processor rejected matching resource"
         assert p.try_process(valid_mapping), "Processor rejected matching resource (again)"
-        assert not p.try_process(valid_knative_ingress), "Processor accepted non-matching resource"
 
         assert aconf.get_count("test") == 2, "Processor did not increment counter"
 
@@ -342,21 +283,17 @@ class TestDependencyManager:
             [
                 SecretDependency(),
                 ServiceDependency(),
-                IngressClassesDependency(),
             ]
         )
 
     def test_cyclic(self):
         a = self.deps.for_instance(object())
         b = self.deps.for_instance(object())
-        c = self.deps.for_instance(object())
 
         a.provide(SecretDependency)
         a.want(ServiceDependency)
         b.provide(ServiceDependency)
-        b.want(IngressClassesDependency)
-        c.provide(IngressClassesDependency)
-        c.want(SecretDependency)
+        b.want(SecretDependency)
 
         with pytest.raises(ValueError):
             self.deps.sorted_watt_keys()
@@ -364,15 +301,13 @@ class TestDependencyManager:
     def test_sort(self):
         a = self.deps.for_instance(object())
         b = self.deps.for_instance(object())
-        c = self.deps.for_instance(object())
 
         a.want(SecretDependency)
         a.want(ServiceDependency)
-        a.provide(IngressClassesDependency)
         b.provide(SecretDependency)
-        c.provide(ServiceDependency)
+        a.provide(ServiceDependency)
 
-        assert self.deps.sorted_watt_keys() == ["secret", "service", "ingressclasses"]
+        assert self.deps.sorted_watt_keys() == ["secret", "service"]
 
 
 if __name__ == "__main__":

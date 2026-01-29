@@ -71,9 +71,6 @@ type KubernetesSnapshot struct {
 	// It is safe to ignore AmbassadorInstallation, ambassador doesn't need to look at those, just
 	// the operator.
 
-	KNativeClusterIngresses []*kates.Unstructured `json:"clusteringresses.networking.internal.knative.dev,omitempty"`
-	KNativeIngresses        []*kates.Unstructured `json:"ingresses.networking.internal.knative.dev,omitempty"`
-
 	K8sSecrets []*kates.Secret             `json:"-"`      // Secrets from Kubernetes
 	FSSecrets  map[SecretRef]*kates.Secret `json:"-"`      // Secrets from the filesystem
 	Secrets    []*kates.Secret             `json:"secret"` // Secrets we'll feed to Ambassador
