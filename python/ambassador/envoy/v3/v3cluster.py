@@ -221,6 +221,21 @@ class V3Cluster(Cacheable):
 
             fields["upstream_connection_options"] = {"tcp_keepalive": keepalive_options}
 
+        load_balancer = cluster.get("load_balancer", None)
+        if load_balancer is not None:
+            common_lb_config = {}
+
+            healthy_panic_threshold = load_balancer.get("healthy_panic_threshold", None)
+            if healthy_panic_threshold is not None:
+                # Convert percentage to Envoy's Percent type (0.0-100.0 range)
+                threshold_percent = max(0.0, min(100.0, float(healthy_panic_threshold)))
+                common_lb_config["healthy_panic_threshold"] = {
+                    "value": threshold_percent
+                }
+
+            if common_lb_config:
+                fields["common_lb_config"] = common_lb_config
+
         self.update(fields)
 
     def get_endpoints(self, cluster: IRCluster):

@@ -206,3 +206,54 @@ field: { *anchor: "bar"}`, TestResource{}, `{}`, "error converting YAML to JSON:
 		})
 	}
 }
+
+func TestPercent(t *testing.T) {
+	t.Parallel()
+	type TestResource struct {
+		Field crds.Percent `json:"field,omitempty"`
+	}
+	type subtest struct {
+		inputYAML      string
+		expectedStruct TestResource
+		expectedJSON   string
+		expectedErr    string
+	}
+	subtests := map[string]subtest{
+		"empty":         {`{}`, TestResource{}, `{"field":0}`, ``},
+		"explicitEmpty": {`field:`, TestResource{}, `{"field":0}`, ``},
+		"explicitnull":  {`field: null`, TestResource{}, `{"field":0}`, ``},
+		"explicitNull":  {`field: Null`, TestResource{}, `{"field":0}`, ``},
+		"explicitNULL":  {`field: NULL`, TestResource{}, `{"field":0}`, ``},
+		"explicitTilde": {`field: ~`, TestResource{}, `{"field":0}`, ``},
+		"50.5":          {`field: 50.5`, TestResource{crds.Percent{50.5}}, `{"field":50.5}`, ``},
+		"0":             {`field: 0`, TestResource{crds.Percent{0}}, `{"field":0}`, ``},
+		"100":           {`field: 100`, TestResource{crds.Percent{100}}, `{"field":100}`, ``},
+		"decimal":       {`field: 25.75`, TestResource{crds.Percent{25.75}}, `{"field":25.75}`, ``},
+		"string":        {`field: "50%"`, TestResource{crds.Percent{0}}, `{"field":0}`, "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go struct field TestResource.field of type float64"},
+	}
+	for name, info := range subtests {
+		info := info // capture loop variable
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			t.Run("YAML", func(t *testing.T) {
+				var actual TestResource
+				err := yaml.Unmarshal([]byte(info.inputYAML), &actual)
+				if info.expectedErr == "" {
+					assert.NoError(t, err)
+					assert.Equal(t, info.expectedStruct, actual)
+				} else {
+					assert.EqualError(t, err, info.expectedErr)
+				}
+			})
+
+			if info.expectedErr == "" {
+				t.Run("JSON", func(t *testing.T) {
+					actualJSON, err := json.Marshal(info.expectedStruct)
+					assert.NoError(t, err)
+					assert.Equal(t, info.expectedJSON, string(actualJSON))
+				})
+			}
+		})
+	}
+}

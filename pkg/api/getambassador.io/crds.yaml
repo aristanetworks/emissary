@@ -2597,6 +2597,10 @@ spec:
                     type: object
                   header:
                     type: string
+                  healthy_panic_threshold:
+                    maximum: 100
+                    minimum: 0
+                    type: number
                   policy:
                     enum:
                     - round_robin
@@ -3151,6 +3155,10 @@ spec:
                     type: object
                   header:
                     type: string
+                  healthy_panic_threshold:
+                    maximum: 100
+                    minimum: 0
+                    type: number
                   policy:
                     enum:
                     - round_robin
@@ -3892,6 +3900,10 @@ spec:
                     type: object
                   header:
                     type: string
+                  healthy_panic_threshold:
+                    maximum: 100
+                    minimum: 0
+                    type: number
                   policy:
                     enum:
                     - round_robin

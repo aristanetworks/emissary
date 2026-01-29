@@ -298,6 +298,31 @@ func (d SecondDuration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(int64(d.Seconds()))
 }
 
+// +kubebuilder:validation:Type="number"
+// +kubebuilder:validation:Minimum=0
+// +kubebuilder:validation:Maximum=100
+type Percent struct {
+	Value float64 `json:"-"`
+}
+
+func (p *Percent) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		p.Value = 0
+		return nil
+	}
+
+	var floatval float64
+	if err := json.Unmarshal(data, &floatval); err != nil {
+		return err
+	}
+	p.Value = floatval
+	return nil
+}
+
+func (p Percent) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.Value)
+}
+
 // UntypedDict is relatively opaque as a Go type, but it preserves its
 // contents in a roundtrippable way.
 //
