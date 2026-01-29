@@ -28,9 +28,6 @@ func (s *KubernetesSnapshot) PopulateAnnotations(ctx context.Context) error {
 	for _, svc := range s.Services {
 		annotatable = append(annotatable, svc)
 	}
-	for _, ing := range s.Ingresses {
-		annotatable = append(annotatable, ing)
-	}
 
 	s.Annotations = make(map[string]AnnotationList)
 	var errs derror.MultiError

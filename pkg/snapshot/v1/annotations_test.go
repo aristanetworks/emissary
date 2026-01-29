@@ -11,7 +11,6 @@ import (
 	"github.com/datawire/dlib/dlog"
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
-	"github.com/emissary-ingress/emissary/v3/pkg/kates/k8s_resource_types"
 	snapshotTypes "github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
 
@@ -70,27 +69,6 @@ service: quote:80
 		},
 	}
 
-	ingHost := `
----
-apiVersion: getambassador.io/v3alpha1
-kind: Mapping
-name: cool-mapping
-prefix: /blah/
-`
-
-	ingress := &k8s_resource_types.Ingress{
-		TypeMeta: metav1.TypeMeta{
-			Kind: "Ingress",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ingress",
-			Namespace: "somens",
-			Annotations: map[string]string{
-				"getambassador.io/config": ingHost,
-			},
-		},
-	}
-
 	ambSvcAnnotations := `
 ---
 apiVersion: getambassador.io/v3alpha1
@@ -138,9 +116,8 @@ prefix: /blah/`
 	}
 
 	ks := &snapshotTypes.KubernetesSnapshot{
-		Services:  []*kates.Service{svc, ambSvc, svcWithEmptyAnnotation, svcWithMissingAnnotation},
-		Ingresses: []*snapshotTypes.Ingress{{Ingress: *ingress}},
-		Hosts:     []*amb.Host{ignoredHost},
+		Services: []*kates.Service{svc, ambSvc, svcWithEmptyAnnotation, svcWithMissingAnnotation},
+		Hosts:    []*amb.Host{ignoredHost},
 	}
 
 	ctx := dlog.NewTestContext(t, false)
@@ -162,22 +139,6 @@ prefix: /blah/`
 				Spec: amb.MappingSpec{
 					Prefix:  "/backend/",
 					Service: "quote:80",
-				},
-			},
-		},
-		"Ingress/ingress.somens": {
-			&kates.Unstructured{
-				Object: map[string]interface{}{
-					"apiVersion": "getambassador.io/v3alpha1",
-					"kind":       "Mapping",
-					"metadata": map[string]interface{}{
-						"name":      "cool-mapping",
-						"namespace": "somens",
-					},
-					"spec": map[string]interface{}{
-						"prefix": "/blah/",
-					},
-					"errors": "spec.service in body is required",
 				},
 			},
 		},

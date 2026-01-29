@@ -74,7 +74,7 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 	// - If the map value doesn't set a field selector, then `fs` (above) will be used.
 	//
 	// Most of the interestingTypes are static, but it's completely OK to add types based
-	// on runtime considerations, as we do for IngressClass and the KNative stuff.
+	// on runtime considerations, as we do for the KNative stuff.
 	interestingTypes := map[string][]thingToMaybeWatch{
 		// Native Kubernetes types
 		//
@@ -85,15 +85,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 		"EndpointSlices": {{typename: "endpointslices.v1.discovery.k8s.io", fieldselector: endpointFs}},
 		"K8sSecrets":     {{typename: "secrets.v1."}}, // New in Kubernetes 0.16.0 (2015-04-28) (v1beta{1..3} before that)
 		"ConfigMaps":     {{typename: "configmaps.v1.", fieldselector: configMapFs}},
-		"Ingresses": {
-			{typename: "ingresses.v1beta1.extensions"},        // New in Kubernetes 1.2.0 (2016-03-16), gone in Kubernetes 1.22.0 (2021-08-04)
-			{typename: "ingresses.v1beta1.networking.k8s.io"}, // New in Kubernetes 1.14.0 (2019-03-25), gone in Kubernetes 1.22.0 (2021-08-04)
-			{typename: "ingresses.v1.networking.k8s.io"},      // New in Kubernetes 1.19.0 (2020-08-26)
-		},
-		"IngressClasses": {
-			{typename: "ingressclasses.v1beta1.networking.k8s.io", ignoreIf: IsAmbassadorSingleNamespace()}, // New in Kubernetes 1.18.0 (2020-03-25), gone in Kubernetes 1.22.0 (2021-08-04)
-			{typename: "ingressclasses.v1.networking.k8s.io", ignoreIf: IsAmbassadorSingleNamespace()},      // New in Kubernetes 1.19.0 (2020-08-26)
-		},
 
 		// Knative types
 		//

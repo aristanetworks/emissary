@@ -11,11 +11,9 @@ from ..utils import parse_bool, parse_json, parse_yaml
 from .ambassador import AmbassadorProcessor
 from .dependency import (
     DependencyManager,
-    IngressClassesDependency,
     SecretDependency,
     ServiceDependency,
 )
-from .ingress import IngressClassProcessor, IngressProcessor
 from .k8sobject import KubernetesGVK, KubernetesObject
 from .k8sprocessor import (
     AggregateKubernetesProcessor,
@@ -50,7 +48,6 @@ class ResourceFetcher:
                 [
                     ServiceDependency(),
                     SecretDependency(),
-                    IngressClassesDependency(),
                 ]
             ),
         )
@@ -65,8 +62,6 @@ class ResourceFetcher:
                     ),
                     AmbassadorProcessor(self.manager),
                     SecretProcessor(self.manager),
-                    IngressClassProcessor(self.manager),
-                    IngressProcessor(self.manager),
                     ServiceProcessor(self.manager, watch_only=watch_only),
                     KnativeIngressProcessor(self.manager),
                 ]
@@ -274,16 +269,6 @@ spec:
                 "Ambassador could not find the DevPortal CRD definition. Please visit https://www.getambassador.io/docs/edge-stack/latest/topics/install/upgrade-to-edge-stack/#5-update-and-restart for more information. You can continue using Ambassador, but DevPortal resources will be ignored..."
             )
 
-        # We could be posting errors about the missing IngressClass resource, but given it's new in K8s 1.18
-        # and we assume most users would be worried about it when running on older clusters, we'll rely on
-        # Ambassador logs "Ambassador does not have permission to read IngressClass resources" for the moment.
-        # if os.path.isfile(os.path.join(basedir, '.ambassador_ignore_ingress_class')):
-        #    self.aconf.post_error("Ambassador is not permitted to read IngressClass resources. Please visit https://www.getambassador.io/user-guide/ingress-controller/ for more information. You can continue using Ambassador, but IngressClass resources will be ignored...")
-
-        if os.path.isfile(os.path.join(basedir, ".ambassador_ignore_ingress")):
-            self.aconf.post_error(
-                "Ambassador is not permitted to read Ingress resources. Please visit https://www.getambassador.io/docs/edge-stack/latest/topics/running/ingress-controller/#ambassador-as-an-ingress-controller for more information. You can continue using Ambassador, but Ingress resources will be ignored..."
-            )
 
         # Expand environment variables allowing interpolation in manifests.
         serialization = os.path.expandvars(serialization)
@@ -360,12 +345,6 @@ spec:
     def load_pod_labels(self):
         pod_labels_path = "/tmp/ambassador-pod-info/labels"
         if not os.path.isfile(pod_labels_path):
-            if not self.alerted_about_labels:
-                self.aconf.post_error(
-                    f"Pod labels are not mounted in the Ambassador container; Kubernetes Ingress support is likely to be limited"
-                )
-                self.alerted_about_labels = True
-
             return False
 
         with open(pod_labels_path) as pod_labels_file:

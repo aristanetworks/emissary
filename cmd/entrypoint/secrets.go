@@ -16,7 +16,6 @@ import (
 	"github.com/datawire/dlib/dlog"
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
-	"github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 	snapshotTypes "github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
 
@@ -221,9 +220,6 @@ func ReconcileSecrets(ctx context.Context, sh *SnapshotHolder) error {
 			resources = append(resources, m)
 		}
 	}
-	for _, i := range sh.k8sSnapshot.Ingresses {
-		resources = append(resources, i)
-	}
 
 	// OK. Once that's done, we can check to see if we should be
 	// doing secret namespacing or not -- this requires a look into
@@ -402,14 +398,6 @@ func findSecretRefs(ctx context.Context, resource kates.Object, secretNamespacin
 		}
 		if secs.Client.Secret != "" {
 			secretRef(r.GetNamespace(), secs.Client.Secret, secretNamespacing, action)
-		}
-
-	case *snapshot.Ingress:
-		// Ingress is pretty straightforward, too, just look in spec.tls.
-		for _, itls := range r.Spec.TLS {
-			if itls.SecretName != "" {
-				secretRef(r.GetNamespace(), itls.SecretName, secretNamespacing, action)
-			}
 		}
 	}
 }
