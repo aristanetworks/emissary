@@ -31,8 +31,6 @@ generate/files      += $(patsubst $(OSS_HOME)/api/%.proto,                   $(O
 # Whole directories with one rule for the whole directory
 generate/files      += $(OSS_HOME)/pkg/envoy-control-plane/                    # recipe in _cxx/envoy.mk
 # Individual files: Misc
-generate/files      += $(OSS_HOME)/DEPENDENCIES.md
-generate/files      += $(OSS_HOME)/DEPENDENCY_LICENSES.md
 generate-fast/files += $(OSS_HOME)/CHANGELOG.md
 generate-fast/files += $(OSS_HOME)/pkg/api/getambassador.io/v1/zz_generated.conversion.go
 generate-fast/files += $(OSS_HOME)/pkg/api/getambassador.io/v1/zz_generated.conversion-spoke.go
@@ -258,30 +256,6 @@ $(OSS_HOME)/python/tests/integration/manifests/rbac_cluster_scope.yaml: $(OSS_HO
 
 $(OSS_HOME)/python/tests/integration/manifests/rbac_namespace_scope.yaml: $(OSS_HOME)/k8s-config/kat-rbac-singlenamespace/output.yaml
 	sed -e 's/«/{/g' -e 's/»/}/g' -e 's/♯.*//g' -e 's/- ←//g' <$< >$@
-
-#
-# Generate report on dependencies
-
-$(OSS_HOME)/DEPENDENCIES.md: $(tools/go-mkopensource) $(tools/py-mkopensource) $(OSS_HOME)/build-aux/go-version.txt $(OSS_HOME)/build-aux/pip-show.txt
-	$(MAKE) $(OSS_HOME)/build-aux/go$$(cat $(OSS_HOME)/build-aux/go-version.txt).src.tar.gz
-	set -e; { \
-		cd $(OSS_HOME); \
-		$(tools/go-mkopensource) --ignore-dirty --unparsable-packages unparsable-packages.yaml \
-			--output-format=txt --package=mod --application-type=external --gotar=build-aux/go$$(cat $(OSS_HOME)/build-aux/go-version.txt).src.tar.gz; \
-		echo; \
-		{ sed 's/^---$$//' $(OSS_HOME)/build-aux/pip-show.txt; echo; } | $(tools/py-mkopensource); \
-	} > $@
-
-$(OSS_HOME)/DEPENDENCY_LICENSES.md: $(tools/go-mkopensource) $(tools/py-mkopensource) $(OSS_HOME)/build-aux/go-version.txt $(OSS_HOME)/build-aux/pip-show.txt
-	$(MAKE) $(OSS_HOME)/build-aux/go$$(cat $(OSS_HOME)/build-aux/go-version.txt).src.tar.gz
-	echo -e "Emissary-ingress incorporates Free and Open Source software under the following licenses:\n" > $@
-	set -e; { \
-		cd $(OSS_HOME); \
-		$(tools/go-mkopensource) --ignore-dirty --unparsable-packages unparsable-packages.yaml \
-			--output-format=txt --package=mod --output-type=json --application-type=external \
-			--gotar=build-aux/go$$(cat $(OSS_HOME)/build-aux/go-version.txt).src.tar.gz | jq -r '.licenseInfo | to_entries | .[] | "* [" + .key + "](" + .value + ")"' ; \
-		{ sed 's/^---$$//' $(OSS_HOME)/build-aux/pip-show.txt; echo; } | $(tools/py-mkopensource) --output-type=json | jq -r '.licenseInfo | to_entries | .[] | "* [" + .key + "](" + .value + ")"'; \
-	} | sort | uniq | sed -e 's/\[\([^]]*\)]()/\1/' >> $@
 
 #
 # Misc. other `make generate` rules
