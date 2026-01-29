@@ -5,7 +5,6 @@ import (
 
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
-	gw "sigs.k8s.io/gateway-api/apis/v1alpha1"
 )
 
 const ApiVersion = "v1"
@@ -70,11 +69,6 @@ type KubernetesSnapshot struct {
 	// resolvers
 	KubernetesEndpointResolvers []*amb.KubernetesEndpointResolver `json:"KubernetesEndpointResolver"`
 	KubernetesServiceResolvers  []*amb.KubernetesServiceResolver  `json:"KubernetesServiceResolver"`
-
-	// gateway api
-	GatewayClasses []*gw.GatewayClass
-	Gateways       []*gw.Gateway
-	HTTPRoutes     []*gw.HTTPRoute
 
 	// It is safe to ignore AmbassadorInstallation, ambassador doesn't need to look at those, just
 	// the operator.

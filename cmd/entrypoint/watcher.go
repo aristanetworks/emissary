@@ -9,15 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	gw "sigs.k8s.io/gateway-api/apis/v1alpha1"
-
 	"github.com/datawire/dlib/dgroup"
 	"github.com/datawire/dlib/dlog"
 	"github.com/emissary-ingress/emissary/v3/pkg/acp"
 	"github.com/emissary-ingress/emissary/v3/pkg/ambex"
 	"github.com/emissary-ingress/emissary/v3/pkg/debug"
-	ecp_v3_cache "github.com/emissary-ingress/emissary/v3/pkg/envoy-control-plane/cache/v3"
-	"github.com/emissary-ingress/emissary/v3/pkg/gateway"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
 	"github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
@@ -279,7 +275,6 @@ type SnapshotHolder struct {
 	unsentDeltas []*kates.Delta
 
 	endpointRoutingInfo endpointRoutingInfo
-	dispatcher          *gateway.Dispatcher
 
 	// Serial number that tracks if we need to send snapshot changes or not. This is incremented
 	// when a change worth sending is made, and we copy it over to snapshotNotifiedCount when the
@@ -292,19 +287,6 @@ type SnapshotHolder struct {
 }
 
 func NewSnapshotHolder(ambassadorMeta *snapshot.AmbassadorMetaInfo) (*SnapshotHolder, error) {
-	disp := gateway.NewDispatcher()
-	err := disp.Register("Gateway", func(untyped kates.Object) (*gateway.CompiledConfig, error) {
-		return gateway.Compile_Gateway(untyped.(*gw.Gateway))
-	})
-	if err != nil {
-		return nil, err
-	}
-	err = disp.Register("HTTPRoute", func(untyped kates.Object) (*gateway.CompiledConfig, error) {
-		return gateway.Compile_HTTPRoute(untyped.(*gw.HTTPRoute))
-	})
-	if err != nil {
-		return nil, err
-	}
 	validator, err := newResourceValidator()
 	if err != nil {
 		return nil, err
@@ -315,7 +297,6 @@ func NewSnapshotHolder(ambassadorMeta *snapshot.AmbassadorMetaInfo) (*SnapshotHo
 		ambassadorMeta:      ambassadorMeta,
 		k8sSnapshot:         k8sSnapshot,
 		endpointRoutingInfo: newEndpointRoutingInfo(k8sSnapshot.EndpointSlices),
-		dispatcher:          disp,
 		firstReconfig:       true,
 	}, nil
 }
@@ -335,9 +316,7 @@ func (sh *SnapshotHolder) K8sUpdate(
 	reconcileRateLimitServicesTimer := dbg.Timer("reconcileRateLimitServices")
 
 	endpointsChanged := false
-	dispatcherChanged := false
 	var endpoints *ambex.Endpoints
-	var dispSnapshot *ecp_v3_cache.Snapshot
 	changed, err := func() (bool, error) {
 		dlog.Debugf(ctx, "[WATCHER]: processing cluster changes detected by the kubernetes watcher")
 		sh.mutex.Lock()
@@ -405,52 +384,19 @@ func (sh *SnapshotHolder) K8sUpdate(
 
 			if delta.Kind == "EndpointSlice" || delta.Kind == "Endpoints" {
 				key := fmt.Sprintf("%s:%s", delta.Namespace, delta.Name)
-				if sh.endpointRoutingInfo.endpointWatches[key] || sh.dispatcher.IsWatched(delta.Namespace, delta.Name) {
+				if sh.endpointRoutingInfo.endpointWatches[key] {
 					endpointsChanged = true
 				}
 			} else {
 				endpointsOnly = false
-			}
-
-			if sh.dispatcher.IsRegistered(delta.Kind) {
-				dispatcherChanged = true
-				if delta.DeltaType == kates.ObjectDelete {
-					sh.dispatcher.DeleteKey(delta.Kind, delta.Namespace, delta.Name)
-				}
 			}
 		}
 		if !endpointsOnly {
 			sh.snapshotChangeCount += 1
 		}
 
-		if endpointsChanged || dispatcherChanged {
+		if endpointsChanged {
 			endpoints = makeEndpoints(ctx, sh.k8sSnapshot, nil)
-			for _, gwc := range sh.k8sSnapshot.GatewayClasses {
-				if err := sh.dispatcher.Upsert(gwc); err != nil {
-					// TODO: Should this be more severe?
-					dlog.Error(ctx, err)
-				}
-			}
-			for _, gw := range sh.k8sSnapshot.Gateways {
-				if err := sh.dispatcher.Upsert(gw); err != nil {
-					// TODO: Should this be more severe?
-					dlog.Error(ctx, err)
-				}
-
-			}
-			for _, hr := range sh.k8sSnapshot.HTTPRoutes {
-				if err := sh.dispatcher.Upsert(hr); err != nil {
-					// TODO: Should this be more severe?
-					dlog.Error(ctx, err)
-				}
-			}
-
-			_, dispSnapshot = sh.dispatcher.GetSnapshot(ctx)
-			if dispSnapshot == nil {
-				err := fmt.Errorf("[Dispatch Snapshot]: unable to get valid snapshot")
-				dlog.Error(ctx, err)
-				return false, err
-			}
 		}
 		return true, nil
 	}()
@@ -459,10 +405,10 @@ func (sh *SnapshotHolder) K8sUpdate(
 		return changed, err
 	}
 
-	if endpointsChanged || dispatcherChanged {
+	if endpointsChanged {
 		fastpath := &ambex.FastpathSnapshot{
 			Endpoints: endpoints,
-			Snapshot:  dispSnapshot,
+			Snapshot:  nil,
 		}
 		fastpathProcessor(ctx, fastpath)
 	}

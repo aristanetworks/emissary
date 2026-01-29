@@ -95,20 +95,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 			{typename: "ingressclasses.v1.networking.k8s.io", ignoreIf: IsAmbassadorSingleNamespace()},      // New in Kubernetes 1.19.0 (2020-08-26)
 		},
 
-		// Gateway API (of which Emissary is one of the implementations)
-		"GatewayClasses": {
-			{typename: "gatewayclasses.v1alpha1.networking.x-k8s.io"}, // New in gateway-api 0.1.0 (2020-11-18)
-			//{typename: "gatewayclasses.v1alpha2.gateway.networking.k8s.io"}, // Not yet released
-		},
-		"Gateways": {
-			{typename: "gateways.v1alpha1.networking.x-k8s.io"}, // New in gateway-api 0.1.0 (2020-11-18)
-			//{typename: "gateways.v1alpha2.gateway.networking.k8s.io"}, // Not yet released
-		},
-		"HTTPRoutes": {
-			{typename: "httproutes.v1alpha1.networking.x-k8s.io"}, // New in gateway-api 0.1.0 (2020-11-18)
-			//{typename: "httproutes.v1alpha2.gateway.networking.k8s.io"}, // Not yet released
-		},
-
 		// Knative types
 		//
 		// Note: These keynames have a "KNative" prefix, to avoid clashing with the standard

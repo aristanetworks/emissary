@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
-	gw "sigs.k8s.io/gateway-api/apis/v1alpha1"
 	"sigs.k8s.io/yaml"
 
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
@@ -28,9 +27,6 @@ func init() {
 		panic(err) // panic is ok in init() I guess
 	}
 	if err := amb.AddToScheme(sch); err != nil {
-		panic(err) // panic is ok in init() I guess
-	}
-	if err := gw.AddToScheme(sch); err != nil {
 		panic(err) // panic is ok in init() I guess
 	}
 }
