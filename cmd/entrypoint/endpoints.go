@@ -30,7 +30,6 @@ type ResolverType int
 const (
 	KubernetesServiceResolver ResolverType = iota
 	KubernetesEndpointResolver
-	ConsulResolver
 )
 
 func (rt ResolverType) String() string {
@@ -39,8 +38,6 @@ func (rt ResolverType) String() string {
 		return "KubernetesServiceResolver"
 	case KubernetesEndpointResolver:
 		return "KubernetesEndpointResolver"
-	case ConsulResolver:
-		return "ConsulResolver"
 	default:
 		panic(fmt.Errorf("ResolverType.String: invalid enum value: %d", rt))
 	}
@@ -111,12 +108,6 @@ func (eri *endpointRoutingInfo) reconcileEndpointWatches(ctx context.Context, s 
 		}
 	}
 
-	for _, r := range s.ConsulResolvers {
-		if r.Spec.AmbassadorID.Matches(envAmbID) {
-			eri.saveResolver(ctx, r.GetName(), ConsulResolver, "CRD")
-		}
-	}
-
 	// Once all THAT is done, make sure to define the default "endpoint" and
 	// "kubernetes-endpoint" resolvers if they don't exist.
 	for _, rName := range []string{"endpoint", "kubernetes-endpoint"} {
@@ -165,8 +156,6 @@ func (eri *endpointRoutingInfo) checkResourcePhase1(ctx context.Context, obj kat
 		eri.saveResolver(ctx, v.GetName(), KubernetesServiceResolver, "CRD")
 	case *amb.KubernetesEndpointResolver:
 		eri.saveResolver(ctx, v.GetName(), KubernetesEndpointResolver, "CRD")
-	case *amb.ConsulResolver:
-		eri.saveResolver(ctx, v.GetName(), ConsulResolver, "CRD")
 	}
 }
 

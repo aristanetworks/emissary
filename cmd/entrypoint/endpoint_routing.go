@@ -3,16 +3,13 @@ package entrypoint
 import (
 	"context"
 	"fmt"
-	"net"
 
-	"github.com/datawire/dlib/dlog"
 	"github.com/emissary-ingress/emissary/v3/pkg/ambex"
-	"github.com/emissary-ingress/emissary/v3/pkg/consulwatch"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
 	"github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
 
-func makeEndpoints(ctx context.Context, ksnap *snapshot.KubernetesSnapshot, consulEndpoints map[string]consulwatch.Endpoints) *ambex.Endpoints {
+func makeEndpoints(ctx context.Context, ksnap *snapshot.KubernetesSnapshot, _ interface{}) *ambex.Endpoints {
 	k8sServices := map[string]*kates.Service{}
 	for _, svc := range ksnap.Services {
 		k8sServices[key(svc)] = svc
@@ -47,12 +44,6 @@ func makeEndpoints(ctx context.Context, ksnap *snapshot.KubernetesSnapshot, cons
 					}
 				}
 			}
-		}
-	}
-
-	for _, consulEp := range consulEndpoints {
-		for _, ep := range consulEndpointsToAmbex(ctx, consulEp) {
-			result[ep.ClusterName] = append(result[ep.ClusterName], ep)
 		}
 	}
 
@@ -167,26 +158,6 @@ func k8sEndpointSlicesToAmbex(endpointSlice *kates.EndpointSlice, svc *kates.Ser
 					}
 				}
 			}
-		}
-	}
-
-	return
-}
-
-func consulEndpointsToAmbex(ctx context.Context, endpoints consulwatch.Endpoints) (result []*ambex.Endpoint) {
-	for _, ep := range endpoints.Endpoints {
-		addrs, err := net.LookupHost(ep.Address)
-		if err != nil {
-			dlog.Errorf(ctx, "error resolving consul address %s: %+v", ep.Address, err)
-			continue
-		}
-		for _, addr := range addrs {
-			result = append(result, &ambex.Endpoint{
-				ClusterName: fmt.Sprintf("consul/%s/%s", endpoints.Id, endpoints.Service),
-				Ip:          addr,
-				Port:        uint32(ep.Port),
-				Protocol:    "TCP",
-			})
 		}
 	}
 

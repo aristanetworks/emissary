@@ -1354,7 +1354,6 @@ class IR:
         group_canary_count = 0  # groups coalescing multiple mappings
         group_resolver_kube_service = 0  # groups using the KubernetesServiceResolver
         group_resolver_kube_endpoint = 0  # groups using the KubernetesServiceResolver
-        group_resolver_consul = 0  # groups using the ConsulResolver
         mapping_count = 0  # total mappings
 
         for group in self.ordered_groups():
@@ -1411,8 +1410,6 @@ class IR:
                     group_resolver_kube_service += 1
                 elif resolver.kind == "KubernetesEndpoinhResolver":
                     group_resolver_kube_endpoint += 1
-                elif resolver.kind == "ConsulResolver":
-                    group_resolver_consul += 1
 
         od["group_count"] = group_count
         od["group_http_count"] = group_http_count
@@ -1428,7 +1425,6 @@ class IR:
         od["group_canary_count"] = group_canary_count
         od["group_resolver_kube_service"] = group_resolver_kube_service
         od["group_resolver_kube_endpoint"] = group_resolver_kube_endpoint
-        od["group_resolver_consul"] = group_resolver_consul
         od["mapping_count"] = mapping_count
 
         od["listener_count"] = len(self.listeners)

@@ -49,8 +49,6 @@ func GetAmbID(ctx context.Context, resource kates.Object) amb.AmbassadorID {
 		return r.Spec.AmbassadorID
 	case *amb.DevPortal:
 		return r.Spec.AmbassadorID
-	case *amb.ConsulResolver:
-		return r.Spec.AmbassadorID
 	case *amb.KubernetesEndpointResolver:
 		return r.Spec.AmbassadorID
 	case *amb.KubernetesServiceResolver:

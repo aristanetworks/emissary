@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 ## When you create an AConf, you must hand in Service objects and Resolver
 ## objects. (This will generally happen by virtue of the ResourceFetcher
 ## finding them someplace.) There can be multiple kinds of Resolver objects
-## (e.g. ConsulResolver, KubernetesEndpointResolver, etc.).
+## (e.g. KubernetesEndpointResolver, KubernetesServiceResolver, etc.).
 ##
 ## When you create an IR from that AConf, the various kinds of Resolvers
 ## all get turned into IRServiceResolvers, and the IR uses those to handle
@@ -47,13 +47,7 @@ class IRServiceResolver(IRResource):
         )
 
     def setup(self, ir: "IR", aconf: Config) -> bool:
-        if self.kind == "ConsulResolver":
-            self.resolve_with = "consul"
-
-            if not self.get("datacenter"):
-                self.post_error("ConsulResolver is required to have a datacenter")
-                return False
-        elif self.kind == "KubernetesServiceResolver":
+        if self.kind == "KubernetesServiceResolver":
             self.resolve_with = "k8s"
         elif self.kind == "KubernetesEndpointResolver":
             self.resolve_with = "k8s"
@@ -67,7 +61,6 @@ class IRServiceResolver(IRResource):
         fn = {
             "KubernetesServiceResolver": self._k8s_svc_valid_mapping,
             "KubernetesEndpointResolver": self._k8s_valid_mapping,
-            "ConsulResolver": self._consul_valid_mapping,
         }[self.kind]
 
         return fn(ir, mapping)
@@ -86,32 +79,12 @@ class IRServiceResolver(IRResource):
         # There's no real validation to do here beyond what the Mapping already does.
         return True
 
-    def _consul_valid_mapping(self, ir: "IR", mapping: "IRBaseMapping"):
-        # Mappings using the Consul resolver can't use service names with '.', or port
-        # override. We currently do this the cheap & sleazy way.
-
-        valid = True
-
-        if mapping.service.find(".") >= 0:
-            mapping.post_error("The Consul resolver does not allow dots in service names")
-            valid = False
-
-        if mapping.service.find(":") >= 0:
-            # This is not an _error_ per se -- we'll accept the mapping and just ignore the port.
-            ir.aconf.post_notice(
-                "The Consul resolver does not allow overriding service port; ignoring requested port",
-                resource=mapping,
-            )
-
-        return valid
-
     def resolve(
         self, ir: "IR", cluster: "IRCluster", svc_name: str, svc_namespace: str, port: int
     ) -> Optional[SvcEndpointSet]:
         fn = {
             "KubernetesServiceResolver": self._k8s_svc_resolver,
             "KubernetesEndpointResolver": self._k8s_resolver,
-            "ConsulResolver": self._consul_resolver,
         }[self.kind]
 
         return fn(ir, cluster, svc_name, svc_namespace, port)
@@ -156,15 +129,6 @@ class IRServiceResolver(IRResource):
             )
 
         return svc, namespace
-
-    def _consul_resolver(
-        self, ir: "IR", cluster: "IRCluster", svc_name: str, svc_namespace: str, port: int
-    ) -> Optional[SvcEndpointSet]:
-        # For Consul, we look things up with the service name and the datacenter at present.
-        # We ignore the port in the lookup (we should've already posted a warning about the port
-        # being present, actually).
-
-        return self.get_endpoints(ir, f"consul-{svc_name}-{self.datacenter}", None)
 
     def get_endpoints(self, ir: "IR", key: str, port: Optional[int]) -> Optional[SvcEndpointSet]:
         # OK. Do we have a Service by this key?
@@ -211,7 +175,6 @@ class IRServiceResolver(IRResource):
         fn = {
             "KubernetesServiceResolver": self._k8s_svc_clustermap_entry,
             "KubernetesEndpointResolver": self._k8s_clustermap_entry,
-            "ConsulResolver": self._consul_clustermap_entry,
         }[self.kind]
 
         return fn(ir, cluster, svc_name, svc_namespace, port)
@@ -247,28 +210,6 @@ class IRServiceResolver(IRResource):
             "port": port,
             "kind": self.kind,
             "endpoint_path": "k8s/%s/%s%s" % (namespace, svc, portstr),
-        }
-
-    def _consul_clustermap_entry(
-        self, ir: "IR", cluster: "IRCluster", svc_name: str, svc_namespace: str, port: int
-    ) -> ClustermapEntry:
-        # Fallback to the KubernetesServiceResolver for ip addresses.
-        if is_ip_address(svc_name):
-            return {
-                "service": svc_name,
-                "namespace": svc_namespace,
-                "port": port,
-                "kind": "KubernetesServiceResolver",
-            }
-
-        # For Consul, we look things up with the service name and the datacenter at present.
-        # We ignore the port in the lookup (we should've already posted a warning about the port
-        # being present, actually).
-        return {
-            "service": svc_name,
-            "datacenter": self.datacenter,
-            "kind": self.kind,
-            "endpoint_path": "consul/%s/%s" % (self.datacenter, svc_name),
         }
 
 
@@ -323,27 +264,6 @@ class IRServiceResolverFactory:
             ir.add_resolver(IRServiceResolver(ir, aconf, **resolver_config))
         else:
             cls.check_aliases(ir, aconf, "endpoint", res_e, "kubernetes-endpoint", res_k_e)
-
-        res_c = ir.get_resolver("consul")
-        res_c_e = ir.get_resolver("consul-endpoint")
-
-        if not res_c and not res_c_e:
-            # Neither exists. Create them from scratch.
-
-            resolver_config = {
-                "apiVersion": "getambassador.io/v3alpha1",
-                "kind": "ConsulResolver",
-                "name": "consul-endpoint",
-                "datacenter": "dc1",
-            }
-
-            ir.add_resolver(IRServiceResolver(ir, aconf, **resolver_config))
-
-            resolver_config["name"] = "consul"
-
-            ir.add_resolver(IRServiceResolver(ir, aconf, **resolver_config))
-        else:
-            cls.check_aliases(ir, aconf, "consul", res_c, "consul-endpoint", res_c_e)
 
     @classmethod
     def check_aliases(

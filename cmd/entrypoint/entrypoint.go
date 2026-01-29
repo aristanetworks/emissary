@@ -42,8 +42,8 @@ import (
 //          |
 //          | (k8s resources, subscription)
 //          |
-//         \|/               consul endpoints, subscription)
-//     entrypoint[watcher]<----------------------------------- Consul Watches
+//         \|/
+//     entrypoint[watcher]
 //          |
 //          | (Snapshot, POST)
 //          |
@@ -67,9 +67,9 @@ import (
 //   communication.
 //
 // The golang entrypoint process assembles all the ambassador inputs from
-// kubernetes and consul. When it has a complete/consistent set of inputs, it
-// passes the complete snapshot of inputs along to diagd along with a list of
-// deltas and invalid objects. This snapshot is fully detailed in snapshot.go
+// kubernetes. When it has a complete/consistent set of inputs, it passes the
+// complete snapshot of inputs along to diagd along with a list of deltas and
+// invalid objects. This snapshot is fully detailed in snapshot.go
 //
 // The entrypoint goes to some trouble to ensure shared fate between all three
 // processes as well as all the goroutines it manages, i.e. if any one of them

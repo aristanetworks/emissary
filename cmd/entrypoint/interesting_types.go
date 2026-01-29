@@ -118,7 +118,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 
 		// Native Emissary types
 		"AuthServices":                {{typename: "authservices.v3alpha1.getambassador.io"}},
-		"ConsulResolvers":             {{typename: "consulresolvers.v3alpha1.getambassador.io"}},
 		"DevPortals":                  {{typename: "devportals.v3alpha1.getambassador.io"}},
 		"Hosts":                       {{typename: "hosts.v3alpha1.getambassador.io"}},
 		"KubernetesEndpointResolvers": {{typename: "kubernetesendpointresolvers.v3alpha1.getambassador.io"}},

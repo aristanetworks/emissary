@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
-	"github.com/emissary-ingress/emissary/v3/pkg/consulwatch"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
 	gw "sigs.k8s.io/gateway-api/apis/v1alpha1"
 )
@@ -25,13 +24,8 @@ type Snapshot struct {
 	AmbassadorMeta *AmbassadorMetaInfo
 	// The Kubernetes field contains all the ambassador inputs from kubernetes.
 	Kubernetes *KubernetesSnapshot
-	// The Consul field contains endpoint data for any mappings setup to use a
-	// consul resolver.
-	Consul *ConsulSnapshot
 	// The Deltas field contains a list of deltas to indicate what has changed
-	// since the prior snapshot. This is only computed for the Kubernetes
-	// portion of the snapshot. Changes in the Consul endpoint data are not
-	// reflected in this field.
+	// since the prior snapshot.
 	Deltas []*kates.Delta
 	// The APIDocs field contains a list of OpenAPI documents scrapped from
 	// Ambassador Mappings part of the KubernetesSnapshot
@@ -48,10 +42,6 @@ type AmbassadorMetaInfo struct {
 	AmbassadorVersion string          `json:"ambassador_version"`
 	KubeVersion       string          `json:"kube_version"`
 	Sidecar           json.RawMessage `json:"sidecar"`
-}
-
-type ConsulSnapshot struct {
-	Endpoints map[string]consulwatch.Endpoints `json:",omitempty"`
 }
 
 type KubernetesSnapshot struct {
@@ -78,7 +68,6 @@ type KubernetesSnapshot struct {
 	DevPortals        []*amb.DevPortal        `json:"DevPortal"`
 
 	// resolvers
-	ConsulResolvers             []*amb.ConsulResolver             `json:"ConsulResolver"`
 	KubernetesEndpointResolvers []*amb.KubernetesEndpointResolver `json:"KubernetesEndpointResolver"`
 	KubernetesServiceResolvers  []*amb.KubernetesServiceResolver  `json:"KubernetesServiceResolver"`
 

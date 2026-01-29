@@ -178,7 +178,6 @@ spec:
       periodSeconds: 3
     resources: null
     securityContext:
-      {capabilities_block}
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: true
     volumeMounts:

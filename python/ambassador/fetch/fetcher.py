@@ -256,7 +256,7 @@ spec:
 
         if os.path.isfile(os.path.join(basedir, ".ambassador_ignore_crds_2")):
             self.aconf.post_error(
-                "Ambassador could not find Resolver type CRD definitions. Please visit https://www.getambassador.io/docs/edge-stack/latest/topics/install/upgrade-to-edge-stack/#5-update-and-restart for more information. You can continue using Ambassador, but ConsulResolver, KubernetesEndpointResolver, and KubernetesServiceResolver resources will be ignored..."
+                "Ambassador could not find Resolver type CRD definitions. Please visit https://www.getambassador.io/docs/edge-stack/latest/topics/install/upgrade-to-edge-stack/#5-update-and-restart for more information. You can continue using Ambassador, but KubernetesEndpointResolver and KubernetesServiceResolver resources will be ignored..."
             )
 
         if os.path.isfile(os.path.join(basedir, ".ambassador_ignore_crds_3")):
@@ -351,12 +351,6 @@ spec:
                             ann_parent_key = f"{obj['kind']}/{obj['metadata']['name']}.{obj['metadata'].get('namespace')}"
                             for ann_obj in annotations.get(ann_parent_key) or []:
                                 self.handle_annotation(ann_parent_key, ann_obj)
-
-            watt_consul = watt_dict.get("Consul", {})
-            consul_endpoints = watt_consul.get("Endpoints", {})
-
-            for consul_rkey, consul_object in consul_endpoints.items():
-                self.handle_consul_service(consul_rkey, consul_object)
         except json.decoder.JSONDecodeError as e:
             self.aconf.post_error("%s: could not parse WATT: %s" % (self.location, e))
 
@@ -413,55 +407,6 @@ spec:
         with self.manager.locations.mark_annotated():
             rkey = parent_key.split("/", 1)[1]
             self.manager.emit(NormalizedResource.from_kubernetes_object(obj, rkey=rkey))
-
-    # Handler for Consul services
-    def handle_consul_service(self, consul_rkey: str, consul_object: AnyDict) -> None:
-        # resource_identifier = f'consul-{consul_rkey}'
-
-        endpoints = consul_object.get("Endpoints", [])
-        name = consul_object.get("Service", consul_rkey)
-
-        if len(endpoints) < 1:
-            # Bzzt.
-            self.logger.debug(f"ignoring Consul service {name} with no Endpoints")
-            return
-
-        # We can turn this directly into an Ambassador Service resource, since Consul keeps
-        # services and endpoints together (as it should!!).
-        #
-        # Note that we currently trust the association ID to contain the datacenter name.
-
-        normalized_endpoints: Dict[str, List[Dict[str, Any]]] = {}
-
-        for ep in endpoints:
-            ep_addr = ep.get("Address")
-            ep_port = ep.get("Port")
-
-            if not ep_addr or not ep_port:
-                self.logger.debug(
-                    f"ignoring Consul service {name} endpoint {ep['ID']} missing address info"
-                )
-                continue
-
-            # Consul services don't have the weird indirections that Kube services do, so just
-            # lump all the endpoints together under the same source port of '*'.
-            svc_eps = normalized_endpoints.setdefault("*", [])
-            svc_eps.append({"ip": ep_addr, "port": ep_port, "target_kind": "Consul"})
-
-        spec = {
-            "ambassador_id": Config.ambassador_id,
-            "datacenter": consul_object.get("Id") or "dc1",
-            "endpoints": normalized_endpoints,
-        }
-
-        self.manager.emit(
-            NormalizedResource.from_data(
-                "Service",
-                name,
-                spec=spec,
-                rkey=f"consul-{name}-{spec['datacenter']}",
-            )
-        )
 
     def finalize(self) -> None:
         self.k8s_processor.finalize()

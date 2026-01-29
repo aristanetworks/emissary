@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -72,14 +71,12 @@ func WatchAllTheThings(
 	}
 
 	k8sSrc := newK8sSource(client)
-	consulSrc := watchConsul
 
 	return watchAllTheThingsInternal(
 		ctx,
 		encoded,
 		k8sSrc,
 		queries,
-		consulSrc,      // watchConsulFunc
 		notify,         // snapshotProcessor
 		fastpathUpdate, // fastpathProcessor
 		ambassadorMeta,
@@ -146,22 +143,13 @@ type FastpathProcessor func(context.Context, *ambex.FastpathSnapshot)
 //
 //  1. The set of things we're watching is not static, but it must converge.
 //
-//     An example: you can set up a Kubernetes watch that finds a KubernetesConsulResolver
-//     resource, which will then prompt a new Consul watch to happen. At present, nothing
-//     that that Consul watch could find is capable of prompting a new Kubernetes watch to
-//     be created. This is important: it would be fairly easy to change things such that
-//     there is a feedback loop where the set of things we watch does not converge on a
-//     stable set. If such a loop exists, fixing it will probably require grokking this
-//     watcher function, kates.Accumulator, and maybe the reconcilers in consul.go and
-//     endpoints.go as well.
+//     It would be fairly easy to change things such that there is a feedback loop where
+//     the set of things we watch does not converge on a stable set. If such a loop exists,
+//     fixing it will probably require grokking this watcher function, kates.Accumulator,
+//     and maybe the reconcilers in endpoints.go as well.
 //
 //  2. No one source of input events can be allowed to alter the event stream for another
-//     source.
-//
-//     An example: at one point, a bug in the watcher function resulted in the Kubernetes
-//     watcher being able to decide to short-circuit a watcher iteration -- which had the
-//     effect of allowing the K8s watcher to cause _Consul_ events to be ignored. That's
-//     not OK. To guard against this:
+//     source. To guard against this:
 //
 //     A. Refrain from adding state to the watcher loop.
 //
@@ -183,13 +171,12 @@ func watchAllTheThingsInternal(
 	encoded *atomic.Value,
 	k8sSrc K8sSource,
 	queries []kates.Query,
-	watchConsulFunc watchConsulFunc,
 	snapshotProcessor SnapshotProcessor,
 	fastpathProcessor FastpathProcessor,
 	ambassadorMeta *snapshot.AmbassadorMetaInfo,
 ) error {
-	// Ambassador has three sources of inputs: kubernetes, consul, and the filesystem. The job
-	// of the watchAllTheThingsInternal loop is to read updates from all three of these sources,
+	// Ambassador has sources of inputs: kubernetes and the filesystem. The job
+	// of the watchAllTheThingsInternal loop is to read updates from these sources,
 	// assemble them into a single coherent configuration, and pass them along to other parts of
 	// ambassador for processing.
 
@@ -202,11 +189,6 @@ func watchAllTheThingsInternal(
 	// function, and that set of queries remains fixed for the lifetime of the loop, i.e. the
 	// lifetime of the abmassador process (unless we are testing, in which case we may run the
 	// watchAllTheThingsInternal loop more than once in a single process).
-	//
-	// For the consul source we derive the set of resources to watch based on the configuration in
-	// kubernetes, i.e. we watch the services defined in Mappings that are configured to use a
-	// consul resolver. We use the ConsulResolver that a given Mapping is configured with to find
-	// the datacenter to query.
 	grp := dgroup.NewGroup(ctx, dgroup.GroupConfig{})
 
 	// Each time the wathcerLoop wakes up, it assembles updates from whatever source woke it up into
@@ -214,15 +196,12 @@ func watchAllTheThingsInternal(
 	// consider ambassador "booted" and if so passes the updated view along to its output (the
 	// SnapshotProcessor).
 
-	// Setup our two sources of ambassador inputs: kubernetes and consul. Each of
-	// these have interfaces that enable us to run with the "real" implementation or a mock
-	// implementation for our Fake test harness.
+	// Setup our sources of ambassador inputs: kubernetes. This has an interface that enables
+	// us to run with the "real" implementation or a mock implementation for our Fake test harness.
 	k8sWatcher, err := k8sSrc.Watch(ctx, queries...)
 	if err != nil {
 		return err
 	}
-	consulWatcher := newConsulWatcher(watchConsulFunc)
-	grp.Go("consul", consulWatcher.run)
 
 	// SnapshotHolder tracks all the data structures that get updated by the various sources of
 	// information. It also holds the business logic that converts the data as received to a more
@@ -241,7 +220,7 @@ func watchAllTheThingsInternal(
 		for {
 			select {
 			case sh := <-notifyCh:
-				if err := sh.Notify(ctx, encoded, consulWatcher, snapshotProcessor); err != nil {
+				if err := sh.Notify(ctx, encoded, snapshotProcessor); err != nil {
 					return err
 				}
 			case <-ctx.Done():
@@ -257,17 +236,13 @@ func watchAllTheThingsInternal(
 			select {
 			case <-k8sWatcher.Changed():
 				// Kubernetes has some changes, so we need to handle them.
-				changed, err := snapshots.K8sUpdate(ctx, k8sWatcher, consulWatcher, fastpathProcessor)
+				changed, err := snapshots.K8sUpdate(ctx, k8sWatcher, fastpathProcessor)
 				if err != nil {
 					return err
 				}
 				if !changed {
 					continue
 				}
-				out = notifyCh
-			case <-consulWatcher.changed():
-				dlog.Debugf(ctx, "WATCHER: Consul fired")
-				snapshots.ConsulUpdate(ctx, consulWatcher, fastpathProcessor)
 				out = notifyCh
 			case out <- snapshots:
 				out = nil
@@ -296,8 +271,7 @@ type SnapshotHolder struct {
 	// world. This view is constructed from the raw data given to us from each respective source,
 	// plus additional fields that are computed based on the raw data. These are cumulative values,
 	// they always represent the entire state of their respective worlds.
-	k8sSnapshot    *snapshot.KubernetesSnapshot
-	consulSnapshot *snapshot.ConsulSnapshot
+	k8sSnapshot *snapshot.KubernetesSnapshot
 
 	// The unsentDeltas field tracks the stream of deltas that have occured in between each
 	// kubernetes snapshot. This is a passthrough of the full stream of deltas reported by kates
@@ -340,7 +314,6 @@ func NewSnapshotHolder(ambassadorMeta *snapshot.AmbassadorMetaInfo) (*SnapshotHo
 		validator:           validator,
 		ambassadorMeta:      ambassadorMeta,
 		k8sSnapshot:         k8sSnapshot,
-		consulSnapshot:      &snapshot.ConsulSnapshot{},
 		endpointRoutingInfo: newEndpointRoutingInfo(k8sSnapshot.EndpointSlices),
 		dispatcher:          disp,
 		firstReconfig:       true,
@@ -351,7 +324,6 @@ func NewSnapshotHolder(ambassadorMeta *snapshot.AmbassadorMetaInfo) (*SnapshotHo
 func (sh *SnapshotHolder) K8sUpdate(
 	ctx context.Context,
 	watcher K8sWatcher,
-	consulWatcher *consulWatcher,
 	fastpathProcessor FastpathProcessor,
 ) (bool, error) {
 	dbg := debug.FromContext(ctx)
@@ -359,7 +331,6 @@ func (sh *SnapshotHolder) K8sUpdate(
 	katesUpdateTimer := dbg.Timer("katesUpdate")
 	parseAnnotationsTimer := dbg.Timer("parseAnnotations")
 	reconcileSecretsTimer := dbg.Timer("reconcileSecrets")
-	reconcileConsulTimer := dbg.Timer("reconcileConsul")
 	reconcileAuthServicesTimer := dbg.Timer("reconcileAuthServices")
 	reconcileRateLimitServicesTimer := dbg.Timer("reconcileRateLimitServices")
 
@@ -392,33 +363,6 @@ func (sh *SnapshotHolder) K8sUpdate(
 			return false, err
 		}
 
-		// ConsulResolvers are special in that people like to be able to interpolate enviroment
-		// variables in their Spec.Address field (e.g. "address: $CONSULHOST:8500" or the like),
-		// so we need to handle that, but we need to also not interpolate the same thing multiple
-		// times (it's probably unlikely to cause trouble, but you just know eventually it'll
-		// bite us). So we'll look through deltas for changing ConsulResolvers, and then only
-		// interpolate the ones that've changed.
-		//
-		// Also note that legacy mode supported interpolation literally anywhere in the
-		// input, but let's not do that here.
-		for _, delta := range deltas {
-			if (delta.Kind == "ConsulResolver") && (delta.DeltaType != kates.ObjectDelete) {
-				// Oh, look, a ConsulResolver changed, and it wasn't deleted. Go find the object
-				// in the snapshot so we can update it.
-				//
-				// XXX Yes, I know, linear searches suck. We don't expect there to be many
-				// ConsulResolvers, though, and we also don't expect them to change often.
-				for _, resolver := range sh.k8sSnapshot.ConsulResolvers {
-					if resolver.ObjectMeta.Name == delta.Name {
-						// Found it! Go do the environment variable interpolation and update
-						// resolver.Spec.Address in place, so that the change makes it into
-						// the snapshot.
-						resolver.Spec.Address = os.ExpandEnv(resolver.Spec.Address)
-					}
-				}
-			}
-		}
-
 		parseAnnotationsTimer.Time(func() {
 			if err := sh.k8sSnapshot.PopulateAnnotations(ctx); err != nil {
 				dlog.Errorf(ctx, "[WATCHER]: ERROR parsing annotations in configuration change: %v", err)
@@ -430,13 +374,6 @@ func (sh *SnapshotHolder) K8sUpdate(
 		})
 		if err != nil {
 			dlog.Errorf(ctx, "[WATCHER]: ERROR reconciling Secrets: %v", err)
-			return false, err
-		}
-		reconcileConsulTimer.Time(func() {
-			err = ReconcileConsul(ctx, consulWatcher, sh.k8sSnapshot)
-		})
-		if err != nil {
-			dlog.Errorf(ctx, "[WATCHER]: ERROR reconciling Consul resources: %v", err)
 			return false, err
 		}
 		reconcileAuthServicesTimer.Time(func() {
@@ -487,7 +424,7 @@ func (sh *SnapshotHolder) K8sUpdate(
 		}
 
 		if endpointsChanged || dispatcherChanged {
-			endpoints = makeEndpoints(ctx, sh.k8sSnapshot, sh.consulSnapshot.Endpoints)
+			endpoints = makeEndpoints(ctx, sh.k8sSnapshot, nil)
 			for _, gwc := range sh.k8sSnapshot.GatewayClasses {
 				if err := sh.dispatcher.Upsert(gwc); err != nil {
 					// TODO: Should this be more severe?
@@ -532,27 +469,9 @@ func (sh *SnapshotHolder) K8sUpdate(
 	return changed, nil
 }
 
-func (sh *SnapshotHolder) ConsulUpdate(ctx context.Context, consulWatcher *consulWatcher, fastpathProcessor FastpathProcessor) bool {
-	var endpoints *ambex.Endpoints
-	var dispSnapshot *ecp_v3_cache.Snapshot
-	func() {
-		sh.mutex.Lock()
-		defer sh.mutex.Unlock()
-		consulWatcher.update(sh.consulSnapshot)
-		endpoints = makeEndpoints(ctx, sh.k8sSnapshot, sh.consulSnapshot.Endpoints)
-		_, dispSnapshot = sh.dispatcher.GetSnapshot(ctx)
-	}()
-	fastpathProcessor(ctx, &ambex.FastpathSnapshot{
-		Endpoints: endpoints,
-		Snapshot:  dispSnapshot,
-	})
-	return true
-}
-
 func (sh *SnapshotHolder) Notify(
 	ctx context.Context,
 	encoded *atomic.Value,
-	consulWatcher *consulWatcher,
 	snapshotProcessor SnapshotProcessor,
 ) error {
 	dbg := debug.FromContext(ctx)
@@ -575,7 +494,6 @@ func (sh *SnapshotHolder) Notify(
 
 		sn := &snapshot.Snapshot{
 			Kubernetes:     sh.k8sSnapshot,
-			Consul:         sh.consulSnapshot,
 			Invalid:        sh.validator.getInvalid(),
 			Deltas:         sh.unsentDeltas,
 			AmbassadorMeta: sh.ambassadorMeta,
@@ -587,15 +505,12 @@ func (sh *SnapshotHolder) Notify(
 			return err
 		}
 
-		bootstrapped = consulWatcher.isBootstrapped()
-		if bootstrapped {
-			sh.unsentDeltas = nil
-			if sh.firstReconfig {
-				dlog.Debugf(ctx, "WATCHER: Bootstrapped! Computing initial configuration...")
-				sh.firstReconfig = false
-			}
-			sh.snapshotChangeNotified = sh.snapshotChangeCount
+		sh.unsentDeltas = nil
+		if sh.firstReconfig {
+			dlog.Debugf(ctx, "WATCHER: Bootstrapped! Computing initial configuration...")
+			sh.firstReconfig = false
 		}
+		sh.snapshotChangeNotified = sh.snapshotChangeCount
 		return nil
 	}()
 	if err != nil {

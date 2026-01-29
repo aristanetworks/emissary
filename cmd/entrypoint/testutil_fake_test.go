@@ -20,7 +20,6 @@ import (
 	"github.com/emissary-ingress/emissary/v3/pkg/ambex"
 	v3bootstrap "github.com/emissary-ingress/emissary/v3/pkg/api/envoy/config/bootstrap/v3"
 	amb "github.com/emissary-ingress/emissary/v3/pkg/api/getambassador.io/v3alpha1"
-	"github.com/emissary-ingress/emissary/v3/pkg/consulwatch"
 	"github.com/emissary-ingress/emissary/v3/pkg/kates"
 	"github.com/emissary-ingress/emissary/v3/pkg/snapshot/v1"
 )
@@ -60,13 +59,10 @@ type Fake struct {
 	cancel context.CancelFunc
 
 	k8sSource *fakeK8sSource
-	watcher   *fakeWatcher
-	// This group of fields are used to store kubernetes resources and consul endpoint data and
-	// provide explicit control over when changes to that data are sent to the control plane.
-	k8sStore       *K8sStore
-	consulStore    *ConsulStore
-	k8sNotifier    *Notifier
-	consulNotifier *Notifier
+	// This group of fields are used to store kubernetes resources and provide explicit control
+	// over when changes to that data are sent to the control plane.
+	k8sStore    *K8sStore
+	k8sNotifier *Notifier
 
 	// This holds the current snapshot.
 	currentSnapshot *atomic.Value
@@ -102,7 +98,6 @@ func NewFake(t *testing.T, config FakeConfig) *Fake {
 	config.fillDefaults()
 	ctx, cancel := context.WithCancel(dlog.NewTestContext(t, false))
 	k8sStore := NewK8sStore()
-	consulStore := NewConsulStore()
 
 	fake := &Fake{
 		config: config,
@@ -110,10 +105,8 @@ func NewFake(t *testing.T, config FakeConfig) *Fake {
 		cancel: cancel,
 		group:  dgroup.NewGroup(ctx, dgroup.GroupConfig{EnableWithSoftness: true}),
 
-		k8sStore:       k8sStore,
-		consulStore:    consulStore,
-		k8sNotifier:    NewNotifier(),
-		consulNotifier: NewNotifier(),
+		k8sStore:    k8sStore,
+		k8sNotifier: NewNotifier(),
 
 		currentSnapshot: &atomic.Value{},
 
@@ -123,7 +116,6 @@ func NewFake(t *testing.T, config FakeConfig) *Fake {
 	}
 
 	fake.k8sSource = &fakeK8sSource{fake: fake, store: k8sStore}
-	fake.watcher = &fakeWatcher{fake: fake, store: consulStore}
 
 	return fake
 }
@@ -267,7 +259,6 @@ func (f *Fake) runWatcher(ctx context.Context) error {
 		f.currentSnapshot, // encoded
 		f.k8sSource,
 		queries,
-		f.watcher.Watch, // watchConsulFunc
 		f.notifySnapshot,
 		f.notifyFastpath,
 		f.ambassadorMeta,
@@ -376,13 +367,11 @@ func (f *Fake) GetEnvoyConfig(predicate func(*v3bootstrap.Bootstrap) bool) (*v3b
 // AutoFlush will cause a flush whenever any inputs are modified.
 func (f *Fake) AutoFlush(enabled bool) {
 	f.k8sNotifier.AutoNotify(enabled)
-	f.consulNotifier.AutoNotify(enabled)
 }
 
 // Feed will cause inputs from all datasources to be delivered to the control plane.
 func (f *Fake) Flush() {
 	f.k8sNotifier.Notify()
-	f.consulNotifier.Notify()
 }
 
 // sets the ambassador meta info that should get sent in each snapshot
@@ -426,12 +415,6 @@ func (f *Fake) Delete(kind, namespace, name string) error {
 	}
 	f.k8sNotifier.Changed()
 	return nil
-}
-
-// ConsulEndpoint stores the supplied consul endpoint data.
-func (f *Fake) ConsulEndpoint(datacenter, service, address string, port int, tags ...string) {
-	f.consulStore.ConsulEndpoint(datacenter, service, address, port, tags...)
-	f.consulNotifier.Changed()
 }
 
 type fakeK8sSource struct {
@@ -517,27 +500,3 @@ func matches(query kates.Query, obj kates.Object) (bool, error) {
 	return queryKind == objKind, nil
 }
 
-type fakeWatcher struct {
-	fake  *Fake
-	store *ConsulStore
-}
-
-func (f *fakeWatcher) Watch(ctx context.Context, resolver *amb.ConsulResolver, svc string, endpoints chan consulwatch.Endpoints) (Stopper, error) {
-	var sent consulwatch.Endpoints
-	stop := f.fake.consulNotifier.Listen(func() {
-		ep, ok := f.store.Get(resolver.Spec.Datacenter, svc)
-		if ok && !reflect.DeepEqual(ep, sent) {
-			endpoints <- ep
-			sent = ep
-		}
-	})
-	return &fakeStopper{stop}, nil
-}
-
-type fakeStopper struct {
-	stop StopFunc
-}
-
-func (f *fakeStopper) Stop() {
-	f.stop()
-}

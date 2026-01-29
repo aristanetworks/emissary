@@ -56,7 +56,6 @@ class Config:
 
     StorageByKind: ClassVar[Dict[str, str]] = {
         "authservice": "auth_configs",
-        "consulresolver": "resolvers",
         "host": "hosts",
         "listener": "listeners",
         "mapping": "mappings",
