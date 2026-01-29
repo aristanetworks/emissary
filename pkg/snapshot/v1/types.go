@@ -26,9 +26,6 @@ type Snapshot struct {
 	// The Deltas field contains a list of deltas to indicate what has changed
 	// since the prior snapshot.
 	Deltas []*kates.Delta
-	// The APIDocs field contains a list of OpenAPI documents scrapped from
-	// Ambassador Mappings part of the KubernetesSnapshot
-	APIDocs []*APIDoc `json:"APIDocs,omitempty"`
 	// The Invalid field contains any kubernetes resources that have failed
 	// validation.
 	Invalid []*kates.Unstructured
@@ -79,11 +76,6 @@ type KubernetesSnapshot struct {
 
 	// [kind/name.namespace][]kates.Object
 	Annotations map[string]AnnotationList `json:"annotations"`
-
-	// Pods and Deployments were added to be used by Ambassador Agent so it can
-	// report to AgentCom in Ambassador Cloud.
-	Pods        []*kates.Pod        `json:"Pods,omitempty"`
-	Deployments []*kates.Deployment `json:"Deployments,omitempty"`
 
 	// ArgoRollouts represents the argo-rollout CRD state of the world that may or may not be present
 	// in the client's cluster. For this reason, Rollouts resources are fetched making use of the
@@ -137,13 +129,4 @@ func (al *AnnotationList) UnmarshalJSON(bs []byte) error {
 
 	*al = typed
 	return nil
-}
-
-// The APIDoc type is custom object built in the style of a Kubernetes resource (name, type, version)
-// which holds a reference to a Kubernetes object from which an OpenAPI document was scrapped (Data field)
-type APIDoc struct {
-	*kates.TypeMeta
-	Metadata  *kates.ObjectMeta      `json:"metadata,omitempty"`
-	TargetRef *kates.ObjectReference `json:"targetRef,omitempty"`
-	Data      []byte                 `json:"data,omitempty"`
 }

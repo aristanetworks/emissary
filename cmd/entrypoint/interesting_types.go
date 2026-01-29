@@ -60,7 +60,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 	if fs != "" {
 		endpointFs += fmt.Sprintf(",%s", fs)
 	}
-	configMapFs := fmt.Sprintf("metadata.namespace=%s", GetCloudConnectTokenResourceNamespace())
 
 	// We set interestingTypes to the list of types that we'd like to watch (if that type exits
 	// in this cluster).
@@ -81,7 +80,6 @@ func GetInterestingTypes(ctx context.Context, serverTypeList []kates.APIResource
 		"Endpoints":      {{typename: "endpoints.v1.", fieldselector: endpointFs}}, // New in Kubernetes 0.16.0 (2015-04-28) (v1beta{1..3} before that)
 		"EndpointSlices": {{typename: "endpointslices.v1.discovery.k8s.io", fieldselector: endpointFs}},
 		"K8sSecrets":     {{typename: "secrets.v1."}}, // New in Kubernetes 0.16.0 (2015-04-28) (v1beta{1..3} before that)
-		"ConfigMaps":     {{typename: "configmaps.v1.", fieldselector: configMapFs}},
 
 		// Native Emissary types
 		"AuthServices":                {{typename: "authservices.v3alpha1.getambassador.io"}},
