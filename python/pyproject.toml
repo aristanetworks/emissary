@@ -25,7 +25,6 @@ dependencies = [
     "python-json-logger",
     "pyyaml",
     "requests",
-    "semantic-version",
     "typing-extensions",
 ]
 
