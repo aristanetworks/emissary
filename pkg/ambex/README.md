@@ -69,10 +69,7 @@ pain, given that it's not well documented, but here's the deal:
    - it interprets `*.pb` files as [text-encoded protobuf](https://pkg.go.dev/google.golang.org/protobuf/encoding/prototext)
    - all other files are ignored
   As for when it loads those files:
-   - By default when we get a SIGHUP we reload the configuration.
-   - When passed the `--watch` argument we reload whenever any file in
-     the directory changes.  Be careful about updating files
-     atomically if you use this!
+   - When we get a SIGHUP we reload the configuration.
 
 [^1]: The Envoy `go-control-plane` usually refers to
       `github.com/envoyproxy/go-control-plane`, but we've "forked" it
@@ -106,12 +103,6 @@ boostrap config pointing at that `ambex.
     go run github.com/datawire/ambassador/cmd/busyambassador ambex ./example/ambex/
     ```
 
-    or
-
-    ```shell
-    go run github.com/datawire/ambassador/cmd/busyambassador ambex --watch ./example/ambex/
-    ```
-
  2. Second, in another shell, start the `envoy`:
 
     ```shell
@@ -141,9 +132,7 @@ $ curl localhost:8080/get
 
 Edit and/or add more files to the `./example/ambex/` directory in
 order to play with more configurations and see them reload
-_instantaneously_ (if you used the `--watch` flag), or when-triggered
-(if you didn't use the `--watch` flag; trigger a relead by signaling
-the process with `killall -HUP ambex`).
+when triggered by signaling the process with `killall -HUP ambex`.
 
 Clean up
 --------

@@ -33,9 +33,7 @@ package ambex
  *     will get sent to the Envoy.
  * - We manage the SnapshotCache by loading envoy configuration from
  *   json and/or protobuf files on disk.
- *   - By default when we get a SIGHUP, we reload configuration.
- *   - When passed the -watch argument we reload whenever any file in
- *     the directory changes.
+ *   - When we get a SIGHUP, we reload configuration.
  */
 
 import (
@@ -55,7 +53,6 @@ import (
 	"syscall"
 
 	// third-party libraries
-	"github.com/fsnotify/fsnotify"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -113,8 +110,6 @@ import (
 )
 
 type Args struct {
-	watch bool
-
 	adsNetwork string
 	adsAddress string
 
@@ -131,8 +126,6 @@ type Args struct {
 func parseArgs(ctx context.Context, rawArgs ...string) (*Args, error) {
 	var args Args
 	flagset := flag.NewFlagSet("ambex", flag.ContinueOnError)
-
-	flagset.BoolVar(&args.watch, "watch", false, "Watch for file changes")
 
 	// TODO(lukeshu): Consider changing the default here so we don't need to put it in entrypoint.sh
 	flagset.StringVar(&args.adsNetwork, "ads-listen-network", "tcp", "network for ADS to listen on")
@@ -647,20 +640,6 @@ func Main(
 
 	dlog.Infof(ctx, "Ambex %s starting, snapdirPath %s", Version, args.snapdirPath)
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-	defer watcher.Close()
-
-	if args.watch {
-		for _, d := range args.dirs {
-			if err := watcher.Add(d); err != nil {
-				return err
-			}
-		}
-	}
-
 	// The golang signal package does not block when it writes to the channel. We therefore need a
 	// nonzero buffer for the channel to minimize the possiblity that we miss out on a signal that
 	// comes in while we are doing work and not reading from the channel. To minimize the chance
@@ -762,26 +741,6 @@ func Main(
 				if err != nil {
 					return err
 				}
-			case <-watcher.Events:
-				// Non-fastpath update. Just update.
-				err := update(
-					ctx,
-					args.snapdirPath,
-					args.numsnaps,
-					args.edsBypass,
-					configv3,
-					&generation,
-					args.dirs,
-					edsEndpointsV3,
-					fastpathSnapshot,
-					updates,
-				)
-				if err != nil {
-					return err
-				}
-			case err := <-watcher.Errors:
-				// Something went wrong, so scream about that.
-				dlog.Warnf(ctx, "Watcher error: %v", err)
 			case <-ctx.Done():
 				return nil
 			}
