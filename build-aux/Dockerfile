@@ -92,8 +92,9 @@ ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local
 COPY --from=golang /go/bin/* /buildroot/bin/
 
 # Setup the python code
+RUN pip3 install uv
 ADD python python
-RUN time pip install --no-deps -e python
+RUN time uv pip install --system --no-deps -e python
 
 # Run post-compile.sh
 ADD build-aux build-aux

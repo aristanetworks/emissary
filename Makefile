@@ -139,15 +139,15 @@ irun-emissary-agent: bin/run-emissary-agent.sh ## Run emissary-agent using the e
 ## such as pytests, diagd, etc...
 .PHONY: python-dev-setup
 python-dev-setup:
-# recreate venv and upgrade pip
+# recreate venv and install uv
 	rm -rf venv
 	python3 -m venv venv
-	venv/bin/python3 -m pip install --upgrade pip
+	venv/bin/pip3 install uv
 
-# install deps, dev deps and diagd
-	./venv/bin/pip install -r python/requirements.txt
-	./venv/bin/pip install -r python/requirements-dev.txt
-	./venv/bin/pip install -e python
+# install deps, dev deps and diagd using uv (much faster!)
+	./venv/bin/uv pip install -r python/requirements.txt
+	./venv/bin/uv pip install -r python/requirements-dev.txt
+	./venv/bin/uv pip install -e python
 
 # activate venv
 	@echo "run 'source ./venv/bin/activate' to activate venv in local shell"

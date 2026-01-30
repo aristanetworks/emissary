@@ -70,11 +70,9 @@ RUN apk --no-cache add \
   yaml-dev \
   && chmod u+s $(which docker)
 
-# Consult
-# https://github.com/jazzband/pip-tools/#versions-and-compatibility to
-# select a pip-tools version that corresponds to the 'py3-pip' and
-# 'python3' versions above.
-RUN pip3 install "Cython<3.0" pip-tools==7.3
+# Install uv for fast Python package management
+# https://github.com/astral-sh/uv
+RUN pip3 install "Cython<3.0" uv
 
 RUN curl --fail -L https://dl.google.com/go/go1.23.3.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 

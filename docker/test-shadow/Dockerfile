@@ -47,8 +47,9 @@ RUN python3 -m venv /opt/venv
 # causing a full reinstall of all dependencies when dependencies are
 # not changed.
 COPY requirements.txt .
-# Install application dependencies
-RUN /opt/venv/bin/pip3 install -r requirements.txt
+# Install uv and application dependencies
+RUN pip3 install uv
+RUN /opt/venv/bin/uv pip install -r requirements.txt
 
 # COPY the app code and configuration into place.
 COPY shadow.py shadowsvc.crt shadowsvc.key entrypoint.sh ./

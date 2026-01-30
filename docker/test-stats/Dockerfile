@@ -39,8 +39,9 @@ WORKDIR /application
 # causing a full reinstall of all dependencies when dependencies are
 # not changed.
 COPY requirements.txt .
-# Install application dependencies
-RUN pip3 install -r requirements.txt
+# Install uv and application dependencies
+RUN pip3 install uv
+RUN uv pip install --system -r requirements.txt
 
 # COPY the app code and configuration into place
 COPY stats-test.py stats-web.py entrypoint.sh ./

@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ambassador"
+version = "0.0.0-dev"
+description = "Ambassador API Gateway"
+authors = [
+    {name = "Datawire", email = "dev@datawire.io"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["kubernetes", "microservices", "api gateway", "envoy", "ambassador"]
+classifiers = []
+dependencies = [
+    "click",
+    "durationpy",
+    "expiringdict",
+    "flask",
+    "gunicorn",
+    "jsonpatch",
+    "orjson",
+    "prometheus-client",
+    "python-json-logger",
+    "pyyaml",
+    "requests",
+    "semantic-version",
+    "typing-extensions",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "black",
+    "ruff",
+]
+
+[project.scripts]
+diagd = "ambassador_diag.diagd:main"
+
+[project.urls]
+Homepage = "https://www.getambassador.io"
+Repository = "https://github.com/datawire/ambassador"
+
+[tool.setuptools]
+packages = ["ambassador", "ambassador_diag", "kat"]
+
+[tool.setuptools.package-data]
+ambassador = [
+    "templates/**/*",
+    "schemas/**/*",
+    "ambassador.version",
+]
+kat = ["**/*.go"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.black]
+line-length = 110
+target-version = ["py311"]

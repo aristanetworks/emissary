@@ -72,18 +72,12 @@ clobber: docker/base-python.docker.clean
 
 # base-pip: base-python, but with requirements.txt installed.
 #
-# TODO(lukeshu): Figure out a `py-list-deps`-based workflow for
-# updating requirements-dev.txt.
-#python/requirements-dev.txt: $(tools/py-list-deps) $(tools/write-ifchanged) FORCE
-#	$(tools/py-list-deps) --include-dev python/ | $(tools/write-ifchanged) $@
-python/requirements.in: $(tools/py-list-deps) $(tools/write-ifchanged) FORCE
-	set -o pipefail; $(tools/py-list-deps) --no-include-dev python/ | $(tools/write-ifchanged) $@
-clean: python/requirements.in.rm
-python/.requirements.txt.stamp: python/requirements.in docker/base-python.docker.tag.local
+# Use uv to compile requirements from pyproject.toml
+python/.requirements.txt.stamp: python/pyproject.toml docker/base-python.docker.tag.local
 # The --interactive is so that stdin gets passed through; otherwise Docker closes stdin.
 	set -ex -o pipefail; { \
-	  docker run --platform="$(BUILD_ARCH)" --rm --interactive "$$(cat docker/base-python.docker)" sh -c 'tar xf - && pip-compile --resolver=backtracking --allow-unsafe -q >&2 && cat requirements.txt' \
-	    < <(bsdtar -cf - -C $(@D) requirements.in requirements.txt) \
+	  docker run --platform="$(BUILD_ARCH)" --rm --interactive "$$(cat docker/base-python.docker)" sh -c 'tar xf - && uv pip compile pyproject.toml --quiet --output-file requirements.txt >&2 && cat requirements.txt' \
+	    < <(bsdtar -cf - -C $(@D) pyproject.toml requirements.txt) \
 	    > $@; }
 clean: python/.requirements.txt.stamp.rm
 python/requirements.txt: python/%: python/.%.stamp $(tools/copy-ifchanged)

@@ -509,12 +509,12 @@ python3 -m venv venv
 . venv/bin/activate
 # If you're doing this in Datawire's apro.git, then:
 cd ambassador
-# Update pip and install dependencies
-pip install --upgrade pip
-pip install orjson    # see below
-pip install -r builder/requirements.txt
+# Install uv for fast dependency management
+pip install uv
+# Install dependencies using uv (much faster than pip!)
+uv pip install -r builder/requirements.txt
 # Created an editable installation of ambassador:
-pip install -e python/
+uv pip install -e python/
 # Check that we do indeed have diagd in our path.
 which diagd
 # If you're doing this in Datawire's apro.git, then:
