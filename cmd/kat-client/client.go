@@ -57,8 +57,8 @@ func (s Semaphore) Release() {
 	s <- true
 }
 
-// rlimit frobnicates the interplexing beacon. Or maybe it reverses the polarity
-// of the neutron flow. I'm not sure. FIXME.
+// rlimit increases the maximum number of open file descriptors (RLIMIT_NOFILE)
+// to 999999 to allow the kat-client to handle a large number of concurrent connections.
 func rlimit(ctx context.Context) {
 	var rLimit syscall.Rlimit
 	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit)
