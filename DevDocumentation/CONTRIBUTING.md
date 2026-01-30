@@ -565,182 +565,23 @@ we need to push both the code and any relevant kubernetes resources
 into the cluster. The following sections will provide tips for improving
 this development experience.
 
-### Making changes to Envoy
+### Envoy Version
 
-Emissary-ingress is built on top of Envoy and leverages a vendored version of Envoy (*we track upstream very closely*). This section will go into how to make changes to the Envoy that is packaged with Emissary-ingress.
+Emissary-ingress is built on top of Envoy and uses official Envoy images from the upstream project.
 
-This is a bit more complex than anyone likes, but here goes:
+The Envoy version is configured in the main `Makefile` via the `ENVOY_DOCKER_TAG` variable:
 
-#### 1. Preparing your machine
-
-Building and testing Envoy can be very resource intensive.  A laptop
-often can build Envoy... if you plug in an external hard drive, point
-a fan at it, and leave it running overnight and most of the next day.
-At Ambassador Labs, we'll often spin up a temporary build machine in GCE, so
-that we can build it very quickly.
-
-As of Envoy 1.15.0, we've measure the resource use to build and test
-it as:
-
-> | Command            | Disk Size | Disk Used | Duration[1] |
-> |--------------------|-----------|-----------|-------------|
-> | `make update-base` | 450G      |  12GB     | ~11m        |
-> | `make check-envoy` | 450G      | 424GB     | ~45m        |
->
-> [1] On a "Machine type: custom (32 vCPUs, 512 GB memory)" VM on GCE,
-> with the following entry in its `/etc/fstab`:
->
-> ```bash
-> tmpfs:docker  /var/lib/docker  tmpfs  size=450G  0  0
-> ```
-
-If you have the RAM, we've seen huge speed gains from doing the builds
-and tests on a RAM disk (see the `/etc/fstab` line above).
-
-#### 2. Setting up your workspace to hack on Envoy
-
-1. From your `emissary.git` checkout, get Emissary-ingress's current
-   version of the Envoy sources, and create a branch from that:
-
-   ```shell
-   make $PWD/_cxx/envoy
-   git -C _cxx/envoy checkout -b YOUR_BRANCHNAME
-   ```
-2. To build Envoy in FIPS mode, set the following variable:
-
-   ```shell
-   export FIPS_MODE=true
-   ```
-
-   It is important to note that while building Envoy in FIPS mode is
-   required for FIPS compliance, additional steps may be necessary.
-   Emissary does not claim to be FIPS compliant or certified.
-   See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ssl#fips-140-2) for more information on FIPS and Envoy.
-
-> _NOTE:_ FIPS_MODE is NOT supported by the emissary-ingress maintainers but we provide this for developers as convience
-
-#### 3. Hacking on Envoy
-
-Modify the sources in `./_cxx/envoy/`. or update the branch and/or `ENVOY_COMMIT` as necessary in `./_cxx/envoy.mk`
-
-#### 4. Building and testing your hacked-up Envoy
-
-> See `./_cxx/envoy.mk` for the full list of targets.
-
-Multiple Phony targets are provided so that developers can run the steps they are interested in when developing, here are few of the key ones:
-
-- `make update-base`: will perform all the steps necessary to verify, build envoy, build docker images, push images to the container repository and compile the updated protos.
-
-- `make build-envoy`: will build the envoy binaries using the same build container as the upstream Envoy project. Build outputs are mounted to the  `_cxx/envoy-docker-build` directory and Bazel will write the results there.
-
-- `make build-base-envoy-image`: will use the release outputs from building envoy to generate a new `base-envoy` container which is then used in the main emissary-ingress container build.
-
-- `make push-base-envoy`: will push the built container to the remote container repository.
-
-- `make check-envoy`: will use the build docker container to run the Envoy test suite against the currently checked out envoy in the `_cxx/envoy` folder.
-
-- `make envoy-shell`: will run the envoy build container and open a bash shell session. The `_cxx/envoy` folder is volume mounted into the container and the user is set to the `envoybuild` user in the container to ensure you are not running as root to ensure hermetic builds.
-
-#### 5. Test Devloop
-
-Running the Envoy test suite will compile all the test targets. This is a slow process and can use lots of disk space.
-
-The Envoy Inner Devloop for build and testing:
-
-- You can make a change to Envoy code and run the whole test by just calling `make check-envoy`
-- You can run a specific test instead of the whole test suite by setting the `ENVOY_TEST_LABEL` environment variable.
-  - For example, to run just the unit tests in `test/common/network/listener_impl_test.cc`, you should run:
-
-   ```shell
-   ENVOY_TEST_LABEL='//test/common/network:listener_impl_test' make check-envoy
-   ```
-
-- Alternatively, you can run `make envoy-shell` to get a bash shell into the Docker container that does the Envoy builds and you are free to interact with `Bazel` directly.
-
-Interpreting the test results:
-
-- If you see the following message, don't worry, it's harmless; the tests still ran:
-
-   ```text
-   There were tests whose specified size is too big. Use the --test_verbose_timeout_warnings command line option to see which ones these are.
-   ```
-
-   The message means that the test passed, but it passed too
-   quickly, and Bazel is suggesting that you declare it as smaller.
-   Something along the lines of "This test only took 2s, but you
-   declared it as being in the 60s-300s ('moderate') bucket,
-   consider declaring it as being in the 0s-60s ('short')
-   bucket".
-
-   Don't be confused (as I was) in to thinking that it was saying
-   that the test was too big and was skipped and that you need to
-   throw more hardware at it.
-
-- **Build or test Emissary-ingress** with the usual `make` commands, with
-  the exception that you MUST run `make update-base` first whenever
-  Envoy needs to be recompiled; it won't happen automatically.  So
-  `make test` to build-and-test Emissary-ingress would become
-  `make update-base && make test`, and `make images` to just build
-  Emissary-ingress would become `make update-base && make images`.
-
-The Envoy changes with Emissary-ingress:
-
-- Either run `make update-base` to build, and push a new base container and then you can run `make test` for the Emissary-ingress test suite.
-- If you do not want to push the container you can instead:
-  - Build Envoy - `make build-envoy`
-  - Build container - `make build-base-envoy-image`
-  - Test Emissary - `make test`
-
-#### 6. Protobuf changes
-
-If you made any changes to the Protocol Buffer files or if you bumped versions of Envoy then you
-should make sure that you are re-compiling the Protobufs so that they are available and checked-in
-to the emissary.git repository.
-
-```sh
-make compile-envoy-protos
+```makefile
+ENVOY_DOCKER_TAG ?= envoyproxy/envoy:distroless-v1.35.8
 ```
 
-This will copy over the raw proto files, compile and copy the generated go code over to emisary-ignress repository.
+To upgrade to a newer version of Envoy:
 
-#### 7. Finalizing your changes
+1. Update the `ENVOY_DOCKER_TAG` variable in the `Makefile` to point to the desired official Envoy image
+2. Run `make generate` to update any generated code if needed
+3. Test the build with `make images` and `make test`
 
-> NOTE: we are no longer accepting PR's in `datawire/envoy.git`.
-
-If you have custom changes then land them in your custom envoy repository and update the `ENVOY_COMMIT` and `ENVOY_DOCKER_REPO` variable in `_cxx/envoy.mk` so that the image will be pushed to the correct repository.
-
-Then run `make update-base` does all the bits so assuming that was successful then are all good.
-
-**For maintainers:**
-
-You will want to make sure that the image is pushed to the backup container registries:
-
-```shell
-# upload image to the mirror in GCR
-SHA=GET_THIS_FROM_THE_make_update-base_OUTPUT
-TAG="envoy-0.$SHA.opt"
-docker pull "docker.io/emissaryingress/base-envoy:envoy-0.$TAG.opt"
-docker tag "docker.io/emissaryingress/base-envoy:$TAG" "gcr.io/datawire/ambassador-base:$TAG"
-docker push "gcr.io/datawire/ambassador-base:$TAG"
-```
-
-#### 8. Final Checklist
-
-**For Maintainers Only**
-
-Here is a checklist of things to do when bumping the `base-envoy` version:
-
-- [ ] The image has been pushed to...
-  - [ ] `docker.io/emissaryingress/base-envoy`
-  - [ ] `gcr.io/datawire/ambassador-base`
-- [ ] The `datawire/envoy.git` commit has been tagged as `datawire-$(git describe --tags --match='v*')`
-      (the `--match` is to prevent `datawire-*` tags from stacking on each other).
-- [ ] It's been tested with...
-  - [ ] `make check-envoy`
-
-The `check-envoy-version` CI job will double check all these things, with the exception of running
-the Envoy tests. If the `check-envoy-version` is failing then double check the above, fix them and
-re-run the job.
+This simplified approach uses official Envoy releases instead of maintaining a custom fork, making the build process faster and more maintainable.
 
 ### Developing Emissary-ingress (Maintainers-only advice)
 

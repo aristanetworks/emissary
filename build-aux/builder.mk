@@ -122,17 +122,18 @@ $(foreach i,$(_images), docker/$i.docker.tag.remote ): docker/%.docker.tag.remot
 docker/.base-envoy.docker.stamp: FORCE
 	@set -e; { \
 	  if docker image inspect $(ENVOY_DOCKER_TAG) --format='{{ .Id }}' >$@ 2>/dev/null; then \
-	    printf "${CYN}==> ${GRN}Base Envoy image is already pulled${END}\n"; \
+	    printf "${CYN}==> ${GRN}Official Envoy image is already pulled${END}\n"; \
 	  else \
-	    printf "${CYN}==> ${GRN}Pulling base Envoy image${END}\n"; \
+	    printf "${CYN}==> ${GRN}Pulling official Envoy image: $(ENVOY_DOCKER_TAG)${END}\n"; \
 	    TIMEFORMAT="     (docker pull took %1R seconds)"; \
 	    time docker pull $(ENVOY_DOCKER_TAG); \
 	    unset TIMEFORMAT; \
 	  fi; \
-	  echo $(ENVOY_DOCKER_TAG) >$@; \
+	  docker image inspect $(ENVOY_DOCKER_TAG) --format='{{ .Id }}' >$@; \
+	  echo $(ENVOY_DOCKER_TAG) >docker/base-envoy.docker; \
 	}
-clean: docker/base-envoy.docker.clean
-clobber: docker/base-envoy.docker.clean
+clean: docker/base-envoy.docker.clean docker/base-envoy.docker.rm
+clobber: docker/base-envoy.docker.clean docker/base-envoy.docker.rm
 
 docker/.$(LCNAME).docker.stamp: %/.$(LCNAME).docker.stamp: %/base.docker.tag.local %/base-envoy.docker.tag.local %/base-pip.docker.tag.local python/ambassador.version $(BUILDER_HOME)/Dockerfile $(OSS_HOME)/build-aux/py-version.txt $(tools/dsum) vendor FORCE
 	@printf "${CYN}==> ${GRN}Building image ${BLU}$(LCNAME)${END}\n"
@@ -560,19 +561,16 @@ define _help.targets
 
   $(BLD)$(MAKE) $(BLU)generate$(END)  -- update generated files that get checked in to Git.
 
-    1. Use $(BLD)$$ENVOY_COMMIT$(END) to update the vendored gRPC protobuf files ('api/envoy').
-    2. Run 'protoc' to generate things from the protobuf files (both those from
+    1. Run 'protoc' to generate things from the protobuf files (both those from
        Envoy, and those from 'api/kat').
-    3. Use $(BLD)$$ENVOY_GO_CONTROL_PLANE_COMMIT$(END) to update the vendored+patched copy of
+    2. Use $(BLD)$$ENVOY_GO_CONTROL_PLANE_COMMIT$(END) to update the vendored+patched copy of
        envoyproxy/go-control-plane ('pkg/envoy-control-plane/').
-    4. Use the Go CRD definitions in 'pkg/api/getambassador.io/' to generate YAML
+    3. Use the Go CRD definitions in 'pkg/api/getambassador.io/' to generate YAML
        (and a few 'zz_generated.*.go' files).
 
   $(BLD)$(MAKE) $(BLU)generate-fast$(END) -- like $(BLD)make generate$(END), but skips the slow Envoy stuff.
 
   $(BLD)$(MAKE) $(BLU)go-mod-tidy$(END) -- 'go mod tidy', but plays nice with 'make generate'
-
-  $(BLD)$(MAKE) $(BLU)guess-envoy-go-control-plane-commit$(END) -- Make a suggestion for setting ENVOY_GO_CONTROL_PLANE_COMMIT= in generate.mk
 
   $(BLD)$(MAKE) $(BLU)lint$(END)        -- runs golangci-lint.
 

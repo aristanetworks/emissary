@@ -55,12 +55,17 @@ EMISSARY_NAME ?= emissary
 _git_remote_urls := $(shell git remote | xargs -n1 git remote get-url --all)
 IS_PRIVATE ?= $(findstring private,$(_git_remote_urls))
 
+# Envoy configuration
+# Use official Envoy images instead of custom builds
+ENVOY_DOCKER_TAG ?= envoyproxy/envoy:distroless-v1.35.8
+export ENVOY_DOCKER_TAG
+
 include $(OSS_HOME)/build-aux/ci.mk
 include $(OSS_HOME)/build-aux/deps.mk
 include $(OSS_HOME)/build-aux/main.mk
 include $(OSS_HOME)/build-aux/builder.mk
 include $(OSS_HOME)/build-aux/check.mk
-include $(OSS_HOME)/_cxx/envoy.mk
+include $(OSS_HOME)/build-aux/go-control-plane.mk
 include $(OSS_HOME)/releng/release.mk
 
 $(call module,ambassador,$(OSS_HOME))

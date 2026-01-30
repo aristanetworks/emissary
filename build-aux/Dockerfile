@@ -26,8 +26,8 @@ ARG base="i-forgot-to-set-build-arg-base"
 # base image contains only third-party code.
 ARG builderbase="i-forgot-to-set-build-arg-builderbase"
 
-# This controls where we copy envoy from.
-ARG envoy="i-forgot-to-set-build-arg-envoy"
+# Use official Envoy image
+ARG envoy="envoyproxy/envoy:distroless-v1.35.8"
 
 ########################################
 # The builder image
@@ -41,7 +41,8 @@ WORKDIR /buildroot
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/buildroot/bin
 
-COPY --from=envoy /usr/local/bin/envoy-static-stripped /usr/local/bin/envoy
+# Copy Envoy binary from official image
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 ENV KUBECONFIG=/buildroot/kubeconfig.yaml
 
@@ -129,7 +130,7 @@ COPY --from=artifacts /usr/lib/python3.11/site-packages /usr/lib/python3.11/site
 
 # Our envoy. The capabilities here grant the wrapper the ability to use the
 # cap_net_bind_service cap and for Envoy to inherit it.
-COPY --from=envoy /usr/local/bin/envoy-static-stripped /usr/local/bin/envoy
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 RUN setcap cap_net_bind_service=ei /usr/local/bin/envoy
 
 # Our Go binaries. See envoy section for setcap info.
