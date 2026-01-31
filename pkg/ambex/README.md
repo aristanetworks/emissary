@@ -29,11 +29,11 @@ However, the whole `ADS` thing is a bit of a pain:
   elements match what Envoy expects for consistency.
 
 Rather than do all that logic by hand, we'll use the Envoy
-`go-control-plane`[^1] for the heavy lifting.  This is also something of a
+`go-control-plane` for the heavy lifting.  This is also something of a
 pain, given that it's not well documented, but here's the deal:
 
 - The root of the world is a `SnapshotCache`:
-  - `import github.com/datawire/ambassador/pkg/envoy-control-plane/cache`,
+  - `import github.com/envoyproxy/go-control-plane/pkg/cache/v3`,
     then refer to `cache.SnapshotCache`.
   - A collection of internally consistent configuration objects is a
     `Snapshot` (`cache.Snapshot`).
@@ -47,7 +47,7 @@ pain, given that it's not well documented, but here's the deal:
   `SnapshotCache`.
 
 - The gRPC stuff is handled by a `Server`:
-  - `import github.com/datawire/ambassador/pkg/envoy-control-plane/server`,
+  - `import github.com/envoyproxy/go-control-plane/pkg/server/v3`,
     then refer to `server.Server`.
   - Our `runManagementServer` function (largely ripped off from the
     `go-control-plane` tests) gets this running.  It takes a
@@ -70,11 +70,6 @@ pain, given that it's not well documented, but here's the deal:
    - all other files are ignored
   As for when it loads those files:
    - When we get a SIGHUP we reload the configuration.
-
-[^1]: The Envoy `go-control-plane` usually refers to
-      `github.com/envoyproxy/go-control-plane`, but we've "forked" it
-      as `github.com/datawire/ambassador/pkg/envoy-control-plane` in
-      order to build it against the protobufs for our patched Envoy.
 
 Running Ambex
 =============
