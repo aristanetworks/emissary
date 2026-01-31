@@ -2618,10 +2618,6 @@ spec:
                 type: boolean
               bypass_auth:
                 type: boolean
-              bypass_error_response_overrides:
-                description: If true, bypasses any `error_response_overrides` set
-                  on the Ambassador module.
-                type: boolean
               case_sensitive:
                 type: boolean
               circuit_breakers:
@@ -2713,57 +2709,6 @@ spec:
               envoy_override:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              error_response_overrides:
-                description: |-
-                  Error response overrides for this Mapping. Replaces all of the `error_response_overrides`
-                  set on the Ambassador module, if any.
-                items:
-                  description: A response rewrite for an HTTP error response
-                  properties:
-                    body:
-                      description: The new response body
-                      properties:
-                        content_type:
-                          description: |-
-                            The content type to set on the error response body when
-                            using text_format or text_format_source. Defaults to 'text/plain'.
-                          type: string
-                        json_format:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            A JSON response with content-type: application/json. The values can
-                            contain format text like in text_format.
-                          type: object
-                        text_format:
-                          description: |-
-                            A format string representing a text response body.
-                            Content-Type can be set using the `content_type` field below.
-                          type: string
-                        text_format_source:
-                          description: |-
-                            A format string sourced from a file on the Ambassador container.
-                            Useful for larger response bodies that should not be placed inline
-                            in configuration.
-                          properties:
-                            filename:
-                              description: The name of a file on the Ambassador pod
-                                that contains a format text string.
-                              type: string
-                          type: object
-                      type: object
-                    on_status_code:
-                      description: The status code to match on -- not a pointer because
-                        it's required.
-                      maximum: 599
-                      minimum: 400
-                      type: integer
-                  required:
-                  - body
-                  - on_status_code
-                  type: object
-                minItems: 1
-                type: array
               grpc:
                 type: boolean
               headers:
@@ -3196,10 +3141,6 @@ spec:
                 type: boolean
               bypass_auth:
                 type: boolean
-              bypass_error_response_overrides:
-                description: If true, bypasses any `error_response_overrides` set
-                  on the Ambassador module.
-                type: boolean
               case_sensitive:
                 type: boolean
               circuit_breakers:
@@ -3291,57 +3232,6 @@ spec:
               envoy_override:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              error_response_overrides:
-                description: |-
-                  Error response overrides for this Mapping. Replaces all of the `error_response_overrides`
-                  set on the Ambassador module, if any.
-                items:
-                  description: A response rewrite for an HTTP error response
-                  properties:
-                    body:
-                      description: The new response body
-                      properties:
-                        content_type:
-                          description: |-
-                            The content type to set on the error response body when
-                            using text_format or text_format_source. Defaults to 'text/plain'.
-                          type: string
-                        json_format:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            A JSON response with content-type: application/json. The values can
-                            contain format text like in text_format.
-                          type: object
-                        text_format:
-                          description: |-
-                            A format string representing a text response body.
-                            Content-Type can be set using the `content_type` field below.
-                          type: string
-                        text_format_source:
-                          description: |-
-                            A format string sourced from a file on the Ambassador container.
-                            Useful for larger response bodies that should not be placed inline
-                            in configuration.
-                          properties:
-                            filename:
-                              description: The name of a file on the Ambassador pod
-                                that contains a format text string.
-                              type: string
-                          type: object
-                      type: object
-                    on_status_code:
-                      description: The status code to match on -- not a pointer because
-                        it's required.
-                      maximum: 599
-                      minimum: 400
-                      type: integer
-                  required:
-                  - body
-                  - on_status_code
-                  type: object
-                minItems: 1
-                type: array
               grpc:
                 type: boolean
               headers:
@@ -3789,10 +3679,6 @@ spec:
                 type: boolean
               bypass_auth:
                 type: boolean
-              bypass_error_response_overrides:
-                description: If true, bypasses any `error_response_overrides` set
-                  on the Ambassador module.
-                type: boolean
               case_sensitive:
                 type: boolean
               circuit_breakers:
@@ -3871,57 +3757,6 @@ spec:
               envoy_override:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              error_response_overrides:
-                description: |-
-                  Error response overrides for this Mapping. Replaces all of the `error_response_overrides`
-                  set on the Ambassador module, if any.
-                items:
-                  description: A response rewrite for an HTTP error response
-                  properties:
-                    body:
-                      description: The new response body
-                      properties:
-                        content_type:
-                          description: |-
-                            The content type to set on the error response body when
-                            using text_format or text_format_source. Defaults to 'text/plain'.
-                          type: string
-                        json_format:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            A JSON response with content-type: application/json. The values can
-                            contain format text like in text_format.
-                          type: object
-                        text_format:
-                          description: |-
-                            A format string representing a text response body.
-                            Content-Type can be set using the `content_type` field below.
-                          type: string
-                        text_format_source:
-                          description: |-
-                            A format string sourced from a file on the Ambassador container.
-                            Useful for larger response bodies that should not be placed inline
-                            in configuration.
-                          properties:
-                            filename:
-                              description: The name of a file on the Ambassador pod
-                                that contains a format text string.
-                              type: string
-                          type: object
-                      type: object
-                    on_status_code:
-                      description: The status code to match on -- not a pointer because
-                        it's required.
-                      maximum: 599
-                      minimum: 400
-                      type: integer
-                  required:
-                  - body
-                  - on_status_code
-                  type: object
-                minItems: 1
-                type: array
               grpc:
                 type: boolean
               headers:

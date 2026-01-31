@@ -151,10 +151,6 @@ type AmbassadorConfigSpec struct {
 
 	CircuitBreakers *CircuitBreaker `json:"circuit_breakers,omitempty"`
 
-	// List of HTTP error response overrides.
-	// +kubebuilder:validation:MinItems=1
-	ErrorResponseOverrides []ErrorResponseOverride `json:"error_response_overrides,omitempty"`
-
 	// List of headers whose names should be rewritten to the case-sensitive value
 	// present in the list. Applies to both upstream and downstream headers.
 	// +kubebuilder:validation:MinItems=1

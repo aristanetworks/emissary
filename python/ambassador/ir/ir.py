@@ -29,7 +29,6 @@ from .irauth import IRAuth
 from .irbasemapping import IRBaseMapping
 from .irbasemappinggroup import IRBaseMappingGroup
 from .ircluster import IRCluster
-from .irerrorresponse import IRErrorResponse
 from .irfilter import IRFilter
 from .irgofilter import IRGOFilter
 from .irhost import HostFactory, IRHost
@@ -424,16 +423,6 @@ class IR:
         # ...then the ratelimit filter...
         if self.ratelimit:
             self.save_filter(self.ratelimit, already_saved=True)
-
-        # ...and the error response filter...
-        self.save_filter(
-            IRErrorResponse(
-                self,
-                aconf,
-                self.ambassador_module.get("error_response_overrides", None),
-                referenced_by_obj=self.ambassador_module,
-            )
-        )
 
         # ...and, finally, the barely-configurable router filter.
         router_config = {}

@@ -119,13 +119,7 @@ type MappingSpec struct {
 	Weight                *int              `json:"weight,omitempty"`
 	BypassAuth            *bool             `json:"bypass_auth,omitempty"`
 	AuthContextExtensions map[string]string `json:"auth_context_extensions,omitempty"`
-	// If true, bypasses any `error_response_overrides` set on the Ambassador module.
-	BypassErrorResponseOverrides *bool `json:"bypass_error_response_overrides,omitempty"`
-	// Error response overrides for this Mapping. Replaces all of the `error_response_overrides`
-	// set on the Ambassador module, if any.
-	// +kubebuilder:validation:MinItems=1
-	ErrorResponseOverrides []ErrorResponseOverride `json:"error_response_overrides,omitempty"`
-	Modules                []UntypedDict           `json:"modules,omitempty"`
+	Modules               []UntypedDict     `json:"modules,omitempty"`
 	// +k8s:conversion-gen:rename=Hostname
 	Host string `json:"host,omitempty"`
 	// +k8s:conversion-gen:rename=DeprecatedHostRegex
@@ -686,18 +680,6 @@ func (in *MappingSpec) DeepCopyInto(out *MappingSpec) {
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
-		}
-	}
-	if in.BypassErrorResponseOverrides != nil {
-		in, out := &in.BypassErrorResponseOverrides, &out.BypassErrorResponseOverrides
-		*out = new(bool)
-		**out = **in
-	}
-	if in.ErrorResponseOverrides != nil {
-		in, out := &in.ErrorResponseOverrides, &out.ErrorResponseOverrides
-		*out = make([]ErrorResponseOverride, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.Modules != nil {

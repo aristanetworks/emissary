@@ -263,7 +263,6 @@
       prefix: "/differingscope/endpoint2/"
       rewrite: "/"
       bypass_auth: true
-      bypass_error_response_overrides: false
       service: "httpbin.default.svc.cluster.local"
 - apiVersion: "getambassador.io/v1"
   kind: "Mapping"
@@ -278,7 +277,6 @@
       host_rewrite: "httpbin.org"
       prefix: "/azure-header-credentials/httpbin/"
       rewrite: "/"
-      bypass_error_response_overrides: true
       host_regex: false
       service: "httpbin.default.svc.cluster.local"
       timeout_ms: 5000
@@ -647,19 +645,3 @@
   spec:
     prefix: /target/invalidservice/empty
     service: errorresponseonstatuscode-invalidservice-empty
-    error_response_overrides:
-    - on_status_code: 503
-      body:
-        text_format: ''
-- apiVersion: getambassador.io/v1
-  kind: Mapping
-  metadata:
-    creationTimestamp: null
-    name:  errorresponseonstatuscode-invalidservice-empty
-  spec:
-    prefix: /target/invalidservice/empty
-    service: errorresponseonstatuscode-invalidservice-empty
-    error_response_overrides:
-    - on_status_code: 503
-      body:
-        json_format: {}

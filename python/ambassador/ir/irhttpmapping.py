@@ -8,7 +8,6 @@ from ..config import Config
 from .irbasemapping import IRBaseMapping, normalize_service_name
 from .irbasemappinggroup import IRBaseMappingGroup
 from .ircors import IRCORS
-from .irerrorresponse import IRErrorResponse
 from .irhttpmappinggroup import IRHTTPMappingGroup
 from .irretrypolicy import IRRetryPolicy
 from .irutils import selector_matches
@@ -54,7 +53,6 @@ class IRHTTPMapping(IRBaseMapping):
     route_weight: List[Union[str, int]]
     cors: IRCORS
     retry_policy: IRRetryPolicy
-    error_response_overrides: Optional[IRErrorResponse]
     query_parameters: List[KeyValueDecorator]
     regex_rewrite: Dict[str, str]
 
@@ -78,7 +76,6 @@ class IRHTTPMapping(IRBaseMapping):
         "auto_host_rewrite": False,
         "bypass_auth": False,
         "auth_context_extensions": False,
-        "bypass_error_response_overrides": False,
         "case_sensitive": False,
         "circuit_breakers": False,
         "cluster_idle_timeout_ms": False,
@@ -90,7 +87,6 @@ class IRHTTPMapping(IRBaseMapping):
         "dns_type": False,
         "enable_ipv4": False,
         "enable_ipv6": False,
-        "error_response_overrides": False,
         "grpc": False,
         # Do not include headers
         # Do not include host
@@ -441,17 +437,6 @@ class IRHTTPMapping(IRBaseMapping):
 
             if self.retry_policy:
                 self.retry_policy.referenced_by(self)
-            else:
-                return False
-
-        # If we have error response overrides, generate an IR for that too.
-        if "error_response_overrides" in self:
-            self.error_response_overrides = IRErrorResponse(
-                self.ir, aconf, self.get("error_response_overrides", None), location=self.location
-            )
-            # if self.error_response_overrides.setup(self.ir, aconf):
-            if self.error_response_overrides:
-                self.error_response_overrides.referenced_by(self)
             else:
                 return False
 
