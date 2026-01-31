@@ -119,7 +119,7 @@ _images = base-envoy $(LCNAME) kat-client kat-server
 $(foreach i,$(_images), docker/$i.docker.tag.local  ): docker/%.docker.tag.local : docker/%.docker
 $(foreach i,$(_images), docker/$i.docker.tag.remote ): docker/%.docker.tag.remote: docker/%.docker
 
-docker/.base-envoy.docker.stamp: FORCE
+docker/base-envoy.docker: FORCE
 	@set -e; { \
 	  if docker image inspect $(ENVOY_DOCKER_TAG) --format='{{ .Id }}' >$@ 2>/dev/null; then \
 	    printf "${CYN}==> ${GRN}Official Envoy image is already pulled${END}\n"; \
@@ -128,31 +128,24 @@ docker/.base-envoy.docker.stamp: FORCE
 	    TIMEFORMAT="     (docker pull took %1R seconds)"; \
 	    time docker pull $(ENVOY_DOCKER_TAG); \
 	    unset TIMEFORMAT; \
+	    docker image inspect $(ENVOY_DOCKER_TAG) --format='{{ .Id }}' >$@; \
 	  fi; \
-	  docker image inspect $(ENVOY_DOCKER_TAG) --format='{{ .Id }}' >$@; \
-	  echo $(ENVOY_DOCKER_TAG) >docker/base-envoy.docker; \
 	}
 clean: docker/base-envoy.docker.clean docker/base-envoy.docker.rm
 clobber: docker/base-envoy.docker.clean docker/base-envoy.docker.rm
 
-docker/.$(LCNAME).docker.stamp: %/.$(LCNAME).docker.stamp: %/base.docker.tag.local %/base-envoy.docker.tag.local %/base-pip.docker.tag.local python/ambassador.version $(BUILDER_HOME)/Dockerfile $(OSS_HOME)/build-aux/py-version.txt $(tools/dsum) vendor FORCE
+docker/$(LCNAME).docker: python/ambassador.version python/uv.lock $(BUILDER_HOME)/Dockerfile $(tools/dsum) vendor FORCE
 	@printf "${CYN}==> ${GRN}Building image ${BLU}$(LCNAME)${END}\n"
-	@printf "    ${BLU}base=$$(sed -n 2p $*/base.docker.tag.local)${END}\n"
-	@printf "    ${BLU}envoy=$$(cat $*/base-envoy.docker)${END}\n"
-	@printf "    ${BLU}builderbase=$$(sed -n 2p $*/base-pip.docker.tag.local)${END}\n"
 	{ $(tools/dsum) '$(LCNAME) build' 3s \
 	  docker build -f ${BUILDER_HOME}/Dockerfile . \
 			--platform="$(BUILD_ARCH)" \
-	    --build-arg=base="$$(sed -n 2p $*/base.docker.tag.local)" \
-	    --build-arg=envoy="$$(cat $*/base-envoy.docker)" \
-	    --build-arg=builderbase="$$(sed -n 2p $*/base-pip.docker.tag.local)" \
-	    --build-arg=py_version="$$(cat build-aux/py-version.txt)" \
+	    --build-arg=base=alpine:3.20 \
 	    --iidfile=$@; }
 clean: docker/$(LCNAME).docker.clean
 
 REPO=$(BUILDER_NAME)
 
-_inspect-images = base base-envoy base-pip base-python $(LCNAME) kat-client kat-server test-auth test-shadow test-stats
+_inspect-images = base-envoy $(LCNAME) kat-client kat-server test-auth test-shadow test-stats
 inspect-image-cache: $(foreach i,$(_inspect-images), docker/$i.docker.inspect.image.cache)
 .PHONY: inspect-image-cache
 
@@ -214,7 +207,7 @@ pytest-run-tests:
 	set -e; { \
 	  . $(OSS_HOME)/venv/bin/activate; \
 	  export SOURCE_ROOT=$(CURDIR); \
-	  export ENVOY_DOCKER_TAG=$$(cat docker/base-envoy.docker); \
+	  export ENVOY_DOCKER_TAG=$(ENVOY_DOCKER_TAG); \
 	  export KUBESTATUS_PATH=$(CURDIR)/tools/bin/kubestatus; \
 	  pytest --tb=short -rP $(PYTEST_ARGS); \
 	}
@@ -256,13 +249,11 @@ pytest-kat-envoy3-tests-%: build-aux/pytest-kat.txt $(tools/py-split-tests)
 	$(MAKE) pytest-run-tests PYTEST_ARGS="$$PYTEST_ARGS -k '$$($(tools/py-split-tests) $(subst -of-, ,$*) <build-aux/pytest-kat.txt)' python/tests/kat"
 pytest-kat-envoy3-%: python-integration-test-environment pytest-kat-envoy3-tests-%
 
-$(OSS_HOME)/venv: $(OSS_HOME)/build-aux/py-version.txt python/requirements.txt python/requirements-dev.txt python/pyproject.toml
+$(OSS_HOME)/venv: $(OSS_HOME)/build-aux/py-version.txt python/pyproject.toml python/uv.lock
 	rm -rf $@
 	python$$(sed -e 's/\~//' <$(OSS_HOME)/build-aux/py-version.txt) -m venv $@
 	$@/bin/pip3 install uv
-	$@/bin/uv pip install -r python/requirements.txt
-	$@/bin/uv pip install -r python/requirements-dev.txt
-	$@/bin/uv pip install -e $(OSS_HOME)/python
+	cd $(OSS_HOME)/python && UV_PROJECT_ENVIRONMENT=$(OSS_HOME)/venv $(OSS_HOME)/venv/bin/uv sync --all-groups
 clobber: venv.rm-r
 
 GOTEST_ARGS ?= -race -count=1 -timeout 30m

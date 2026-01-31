@@ -19,8 +19,8 @@ $(OSS_HOME)/build-aux/go-version.txt: $(_go-version/deps)
 	$(_go-version/cmd) > $@
 clean: build-aux/go-version.txt.rm
 
-$(OSS_HOME)/build-aux/py-version.txt: docker/base-python/Dockerfile
-	{ grep -o 'python3=\S*' | cut -d= -f2; } < $< > $@
+$(OSS_HOME)/build-aux/py-version.txt: $(OSS_HOME)/build-aux/Dockerfile
+	{ grep -o 'python:3\.[0-9]*' | head -1 | cut -d: -f2; } < $< > $@
 clean: build-aux/py-version.txt.rm
 
 $(OSS_HOME)/build-aux/go1%.src.tar.gz:

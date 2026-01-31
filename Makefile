@@ -15,8 +15,8 @@ BUILD_ARCH ?= linux/amd64
 # go-version.txt (in deps.mk), but we have declared them early here
 # for bootstrapping the build env.  Don't use them directly (not via
 # go-version.txt) except for bootstrapping.
-_go-version/deps = docker/base-python/Dockerfile
-_go-version/cmd = sed -En 's,.*https://dl\.google\.com/go/go([0-9a-z.-]*)\.linux-amd64\.tar\.gz.*,\1,p' < $(_go-version/deps)
+_go-version/deps = build-aux/Dockerfile
+_go-version/cmd = sed -En 's,^FROM golang:([0-9]+\.[0-9]+\.[0-9]+)-.*,\1,p' < $(_go-version/deps)
 ifneq ($(MAKECMDGOALS),$(OSS_HOME)/build-aux/go-version.txt)
   $(call _prelude.go.ensure,$(shell $(_go-version/cmd)))
   ifneq ($(filter $(shell go env GOROOT),$(subst :, ,$(shell go env GOPATH))),)
@@ -148,10 +148,8 @@ python-dev-setup:
 	python3 -m venv venv
 	venv/bin/pip3 install uv
 
-# install deps, dev deps and diagd using uv (much faster!)
-	./venv/bin/uv pip install -r python/requirements.txt
-	./venv/bin/uv pip install -r python/requirements-dev.txt
-	./venv/bin/uv pip install -e python
+# install deps and dev deps using uv (much faster!)
+	cd python && ../venv/bin/uv sync --all-groups
 
 # activate venv
 	@echo "run 'source ./venv/bin/activate' to activate venv in local shell"

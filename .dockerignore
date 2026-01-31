@@ -18,6 +18,10 @@
 !kubestatus
 !go.mod
 !go.sum
+!docker/kat-client/
+!docker/kat-server/
 python/tests/
 **/__pycache__/
 python/ambassador.egg-info
+python/.venv/
+.venv/

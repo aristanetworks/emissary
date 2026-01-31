@@ -14,47 +14,33 @@ push-pytest-images: docker/kat-server.docker.push.remote
 
 # test-{auth,shadow,stats}.docker
 test_svcs = auth shadow stats
-$(foreach svc,$(test_svcs),docker/.test-$(svc).docker.stamp): docker/.%.docker.stamp: docker/%/Dockerfile FORCE
+$(foreach svc,$(test_svcs),docker/test-$(svc).docker): docker/%.docker: docker/%/Dockerfile FORCE
 	docker build --iidfile=$@ $(<D)
 clean: $(foreach svc,$(test_svcs),docker/test-$(svc).docker.clean)
 
 # kat-client.docker
-docker/kat-client.go.layer.tar: $(tools/ocibuild) $(tools/write-ifchanged) FORCE
-	GOFLAGS=-mod=mod $(tools/ocibuild) layer gobuild ./cmd/kat-client | $(tools/write-ifchanged) $@
-docker/kat-client.fs.layer.tar: $(tools/ocibuild) $(tools/write-ifchanged) FORCE
-	{ $(tools/ocibuild) layer dir \
-	  --prefix=work \
-	  --chown-uid=0 --chown-uname=root \
-	  --chown-gid=0 --chown-uname=root \
-	  docker/kat-client; } | $(tools/write-ifchanged) $@
-docker/.kat-client.img.tar.stamp: $(tools/ocibuild) docker/base.img.tar docker/kat-client.go.layer.tar docker/kat-client.fs.layer.tar
-	{ $(tools/ocibuild) image build \
-	  --base=docker/base.img.tar \
-	  --config.Cmd='sleep' --config.Cmd='3600' \
-	  --tag=$(LCNAME).local/kat-client:latest \
-	  <($(tools/ocibuild) layer squash $(filter %.layer.tar,$^)); } > $@
+docker/kat-client.docker: docker/kat-client/Dockerfile vendor api pkg cmd/kat-client FORCE
+	docker build --platform="$(BUILD_ARCH)" \
+	  -f docker/kat-client/Dockerfile \
+	  -t $(LCNAME).local/kat-client:latest \
+	  --iidfile=$@ \
+	  .
+clean: docker/kat-client.docker.clean
 
 # kat-server.docker
-docker/kat-server.go.layer.tar: $(tools/ocibuild) $(tools/write-ifchanged) FORCE
-	GOFLAGS=-mod=mod $(tools/ocibuild) layer gobuild ./cmd/kat-server | $(tools/write-ifchanged) $@
-docker/kat-server.certs.layer.tar: $(tools/ocibuild) $(tools/write-ifchanged) docker/kat-server/server.crt docker/kat-server/server.key
-	$(tools/ocibuild) layer dir --prefix=work docker/kat-server | $(tools/write-ifchanged) $@
 docker/kat-server/server.crt: $(tools/testcert-gen)
 	mkdir -p $(@D)
 	$(tools/testcert-gen) --out-cert=$@ --out-key=/dev/null --hosts=kat-server.test.getambassador.io
 docker/kat-server/server.key: $(tools/testcert-gen)
 	mkdir -p $(@D)
 	$(tools/testcert-gen) --out-cert=/dev/null --out-key=$@ --hosts=kat-server.test.getambassador.io
-docker/.kat-server.img.tar.stamp: $(tools/ocibuild) docker/base.img.tar docker/kat-server.go.layer.tar docker/kat-server.certs.layer.tar
-	{ $(tools/ocibuild) image build \
-	  --base=docker/base.img.tar \
-	  --config.Env.append=GRPC_VERBOSITY=debug \
-	  --config.Env.append=GRPC_TRACE=tcp,http,api \
-	  --config.WorkingDir='/work' \
-	  --config.Cmd='kat-server' \
-	  --tag=$(LCNAME).local/kat-server:latest \
-	  <($(tools/ocibuild) layer squash $(filter %.layer.tar,$^)); } > $@
-docker/kat-server.img.tar.clean: docker/kat-server.rm-r
+docker/kat-server.docker: docker/kat-server/Dockerfile docker/kat-server/server.crt docker/kat-server/server.key vendor api pkg cmd/kat-server FORCE
+	docker build --platform="$(BUILD_ARCH)" \
+	  -f docker/kat-server/Dockerfile \
+	  -t $(LCNAME).local/kat-server:latest \
+	  --iidfile=$@ \
+	  .
+clean: docker/kat-server.docker.clean
 
 #
 # Helm tests

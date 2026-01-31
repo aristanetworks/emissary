@@ -28,8 +28,8 @@ ARG LIBARCH
 RUN pip install --no-cache-dir uv
 WORKDIR /emissary
 COPY python python
-RUN uv pip install --system -r python/requirements.txt
-RUN cd /emissary/python && uv pip install --system -e .
+# Use UV sync to install from uv.lock (includes all dependencies and project)
+RUN cd /emissary/python && UV_PROJECT_ENVIRONMENT=/usr/local uv sync --locked --no-dev
 
 # Copy over ambassador.version
 WORKDIR /buildroot/ambassador/python
