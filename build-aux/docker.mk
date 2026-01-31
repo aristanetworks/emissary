@@ -220,15 +220,14 @@ docker.LOCALHOST = $(if $(filter darwin,$(GOHOSTOS)),host.docker.internal,localh
 
 %.docker.clean: $(addprefix %.docker.clean.,$(_docker.clean.groups))
 	if [ -e $*.docker ]; then docker image rm "$$(cat $*.docker)" || true; fi
-	rm -f $*.docker $(*D)/.$(*F).docker.stamp
+	rm -f $*.docker
 .PHONY: %.docker.clean
 
 %.docker.inspect.image.cache:
 	@set -e; { \
 		if [ -e $*.docker ]; then \
 			if ! docker image inspect $$(sed 1q $*.docker) --format='{{ .Id }}' &>/dev/null; then \
-				rm -f $*.docker $(*D)/.$(*F).docker.stamp;  \
-				rm -f $*.img.tar $(*D)/.$(*F).img.tar.stamp; \
+				rm -f $*.docker; \
 				rm -f $*.*.layer.tar; \
 			fi; \
 		fi; \

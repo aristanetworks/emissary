@@ -77,7 +77,6 @@ $(tools.main-gomod): $(tools.bindir)/%: $(tools.srcdir)/%/pin.go $(OSS_HOME)/go.
 # Local Go sources
 # ================
 #
-tools/dsum            = $(tools.bindir)/dsum
 tools/filter-yaml     = $(tools.bindir)/filter-yaml
 tools/fix-crds        = $(tools.bindir)/fix-crds
 tools/flock           = $(tools.bindir)/flock
