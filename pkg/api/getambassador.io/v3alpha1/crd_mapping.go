@@ -289,7 +289,9 @@ type CORS struct {
 
 type RetryPolicy struct {
 	// +kubebuilder:validation:Enum={"5xx","gateway-error","connect-failure","retriable-4xx","refused-stream","retriable-status-codes"}
-	RetryOn       string `json:"retry_on,omitempty"`
+	RetryOn string `json:"retry_on,omitempty"`
+	// +kubebuilder:validation:Enum={"cancelled","deadline-exceeded","internal","resource-exhausted","unavailable"}
+	RetryGrpcOn   string `json:"retry_grpc_on,omitempty"`
 	NumRetries    *int   `json:"num_retries,omitempty"`
 	PerTryTimeout string `json:"per_try_timeout,omitempty"`
 }
