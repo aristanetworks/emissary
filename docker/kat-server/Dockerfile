@@ -1,6 +1,9 @@
 # syntax = docker/dockerfile:1.3
 
-FROM golang:1.23.3-alpine3.20 as builder
+FROM --platform=$BUILDPLATFORM golang:1.23.3-alpine3.20 as builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /build
 
@@ -15,7 +18,7 @@ COPY api api
 
 # Build the binary
 RUN --mount=type=cache,target=/root/.cache/go-build \
-    go build -mod=vendor -trimpath -o /kat-server ./cmd/kat-server
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -mod=vendor -trimpath -o /kat-server ./cmd/kat-server
 
 FROM alpine:3.20
 

@@ -44,8 +44,9 @@ diagd = "ambassador_diag.diagd:main"
 Homepage = "https://www.getambassador.io"
 Repository = "https://github.com/datawire/ambassador"
 
-[tool.setuptools]
-packages = ["ambassador", "ambassador_diag", "kat"]
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*"]
 
 [tool.setuptools.package-data]
 ambassador = [

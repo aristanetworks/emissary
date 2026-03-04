@@ -27,7 +27,10 @@ FROM envoyproxy/envoy:distroless-v1.35.8 as envoy
 # The golang build stage
 ########################################
 
-FROM golang:1.23.3-alpine3.20 as golang
+FROM --platform=$BUILDPLATFORM golang:1.23.3-alpine3.20 as golang
+
+ARG TARGETOS
+ARG TARGETARCH
 
 WORKDIR /go
 
@@ -44,15 +47,17 @@ ADD go.sum go.sum
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     mkdir -p /go/bin && \
-    time go build -mod=vendor -o /go/bin/ ./cmd/...
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} time go build -mod=vendor -o /go/bin/ ./cmd/...
 
 ########################################
 # The Python build stage
 ########################################
 
-FROM python:3.11-alpine3.20 as python-builder
+FROM alpine:3.20 as python-builder
 
 WORKDIR /buildroot
+
+RUN apk add --no-cache python3
 
 # Copy UV from official distroless image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -76,7 +81,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ADD python python
 RUN --mount=type=cache,target=/root/.cache/uv \
     cd python && \
-    uv sync --locked --no-dev
+    uv sync --locked --no-dev --no-editable
 
 ########################################
 # The artifacts build stage

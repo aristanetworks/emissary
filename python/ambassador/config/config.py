@@ -19,7 +19,7 @@ from functools import singledispatchmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Iterable, List, Optional, Tuple, Union
 from typing import cast as typecast
 
-from pkg_resources import Requirement, resource_filename
+import importlib.resources
 
 from ..resource import Resource
 from ..utils import RichStatus, dump_json, parse_bool
@@ -105,7 +105,7 @@ class Config:
         if not schema_dir_path:
             # Note that this "resource_filename" has to do with setuptool packages, not
             # with our ACResource class.
-            schema_dir_path = resource_filename(Requirement.parse("ambassador"), "schemas")
+            schema_dir_path = str(importlib.resources.files("ambassador") / "schemas")
 
         # Once here, we know that schema_dir_path cannot be None. assert that, for mypy's
         # benefit.

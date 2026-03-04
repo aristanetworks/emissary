@@ -42,7 +42,7 @@ from expiringdict import ExpiringDict
 from flask import Flask, Response
 from flask import json as flask_json
 from flask import jsonify, render_template, request, send_from_directory
-from pkg_resources import Requirement, resource_filename
+import importlib.resources
 from prometheus_client import CollectorRegistry, Gauge, Info, ProcessCollector, generate_latest
 from pythonjsonlogger import jsonlogger
 from typing_extensions import NotRequired, TypedDict
@@ -579,7 +579,7 @@ def get_templates_dir():
     res_dir = None
     try:
         # this will fail when not in a distribution
-        res_dir = resource_filename(Requirement.parse("ambassador"), "templates")
+        res_dir = str(importlib.resources.files("ambassador") / "templates")
     except:
         pass
 
@@ -940,7 +940,7 @@ def handle_fs():
 
 @app.route("/ambassador/v0/favicon.ico", methods=["GET"])
 def favicon():
-    template_path = resource_filename(Requirement.parse("ambassador"), "templates")
+    template_path = str(importlib.resources.files("ambassador") / "templates")
 
     return send_from_directory(template_path, "favicon.ico")
 
