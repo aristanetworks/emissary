@@ -70,35 +70,61 @@ class IRBaseMappingGroup(IRResource):
         num_weightless_mappings = 0
 
         normalized_mappings = []
+        weighted_mappings = []
 
-        current_weight = 0
+        total_weight = 0
         for mapping in self.mappings:
             if "weight" in mapping:
                 if mapping.weight > 100:
                     self.post_error(f"Mapping {mapping.name} has invalid weight {mapping.weight}")
                     return False
 
-                # increment current weight by mapping's weight
-                current_weight += round(mapping.weight)
-
-                # set mapping's calculated weight to current weight
-                self.logger.debug(
-                    f"Assigning calculated weight {current_weight} to mapping {mapping.name}"
-                )
-                mapping._weight = current_weight
-
-                # add this mapping to normalized mappings
-                normalized_mappings.append(mapping)
+                # Store the mapping with its weight for later normalization
+                weighted_mappings.append(mapping)
+                total_weight += round(mapping.weight)
             else:
                 num_weightless_mappings += 1
                 weightless_mappings.append(mapping)
 
-        # Did we go over 100%?
-        if current_weight > 100:
-            self.post_error(
-                f"Total weight of mappings exceeds 100, please reconfigure for correct behavior..."
-            )
-            return False
+        # If we have weighted mappings, normalize them
+        current_weight = 0
+        if weighted_mappings:
+            # If total weight exceeds 100, normalize by scaling down proportionally
+            if total_weight > 100:
+                self.logger.info(
+                    f"Total weight of mappings ({total_weight}) exceeds 100, normalizing weights proportionally..."
+                )
+
+                # Calculate normalized weights and assign cumulative weights
+                for i, mapping in enumerate(weighted_mappings):
+                    # Calculate the normalized weight for this mapping
+                    normalized_weight = (mapping.weight / total_weight) * 100
+
+                    # For the last mapping, ensure we hit exactly 100 to avoid rounding errors
+                    if i == len(weighted_mappings) - 1:
+                        current_weight = 100
+                    else:
+                        current_weight += round(normalized_weight)
+
+                    self.logger.debug(
+                        f"Mapping {mapping.name}: original weight {mapping.weight}, normalized to cumulative {current_weight}"
+                    )
+                    mapping._weight = current_weight
+                    normalized_mappings.append(mapping)
+            else:
+                # Total weight is <= 100, use the original logic
+                for mapping in weighted_mappings:
+                    # increment current weight by mapping's weight
+                    current_weight += round(mapping.weight)
+
+                    # set mapping's calculated weight to current weight
+                    self.logger.debug(
+                        f"Assigning calculated weight {current_weight} to mapping {mapping.name}"
+                    )
+                    mapping._weight = current_weight
+
+                    # add this mapping to normalized mappings
+                    normalized_mappings.append(mapping)
 
         if num_weightless_mappings > 0:
             # You might expect that we'd want to generate errors for the case where we hit 100%
