@@ -40,8 +40,7 @@ WORKDIR /application
 # not changed.
 COPY requirements.txt .
 # Install uv and application dependencies
-RUN pip3 install uv
-RUN uv pip install --system -r requirements.txt
+RUN pip3 install --break-system-packages -r requirements.txt
 
 # COPY the app code and configuration into place
 COPY stats-test.py stats-web.py entrypoint.sh ./

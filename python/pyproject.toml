@@ -35,6 +35,7 @@ dev = [
     "mypy",
     "black",
     "ruff",
+    "cryptography",
 ]
 
 [project.scripts]
