@@ -88,7 +88,7 @@ func LocalEnvoyCmd(ctx context.Context, dockerFlags, envoyFlags []string) (*dexe
 
 	cmdline := []string{"docker", "run", "--rm"}
 	cmdline = append(cmdline, dockerFlags...)
-	cmdline = append(cmdline, image, "/usr/local/bin/envoy-static-stripped")
+	cmdline = append(cmdline, image)
 	cmdline = append(cmdline, envoyFlags...)
 
 	cmd := dexec.CommandContext(ctx, cmdline[0], cmdline[1:]...)

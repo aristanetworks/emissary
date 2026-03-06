@@ -332,7 +332,6 @@ def assert_valid_envoy_config(config_dict, extra_dirs=[]):
             f"--volume={tmpdir}:/ambassador:ro",
             *[f"--volume={extra_dir}:{extra_dir}:ro" for extra_dir in extra_dirs],
             img,
-            "/usr/local/bin/envoy-static-stripped",
             "--config-path",
             "/ambassador/econf.json",
             "--mode",
