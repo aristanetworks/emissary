@@ -25,6 +25,41 @@ from ..utils import dump_json
 from .envoy_stats import EnvoyStats
 
 
+def calculate_weight_from_mappings(mappings: List[Dict[str, Any]]) -> List[int]:
+    """
+    Calculate the actual traffic percentage each mapping receives from cumulative _weight values.
+
+    The _weight attribute in mappings is cumulative (e.g., [30, 100] for a 30%/70% split).
+    This function converts cumulative weights to actual percentages.
+
+    Args:
+        mappings: List of mapping dictionaries, each containing a "_weight" key
+
+    Returns:
+        List of integers representing the actual percentage each mapping receives
+
+    Examples:
+        >>> calculate_weight_from_mappings([{"_weight": 30}, {"_weight": 100}])
+        [30, 70]
+        >>> calculate_weight_from_mappings([{"_weight": 50}, {"_weight": 100}])
+        [50, 50]
+        >>> calculate_weight_from_mappings([{"_weight": 0}, {"_weight": 100}])
+        [0, 100]
+        >>> calculate_weight_from_mappings([{"_weight": 100}])
+        [100]
+    """
+    percentages = []
+    prev_weight = 0
+
+    for mapping in mappings:
+        cumulative_weight = mapping.get("_weight", 100)
+        actual_percentage = cumulative_weight - prev_weight
+        percentages.append(actual_percentage)
+        prev_weight = cumulative_weight
+
+    return percentages
+
+
 class DiagSource(dict):
     pass
 
@@ -219,11 +254,15 @@ class DiagResult:
 
         route_clusters: List[DiagCluster] = []
 
-        for mapping in group.get("mappings", []):
+        # Calculate display weights from cumulative _weight values
+        mappings = group.get("mappings", [])
+        display_weights = calculate_weight_from_mappings(mappings)
+
+        for i, mapping in enumerate(mappings):
             cluster = mapping["cluster"]
 
             mapping_cluster = self.include_cluster(cluster.as_dict())
-            mapping_cluster.update({"weight": mapping.get("weight", 100)})
+            mapping_cluster.update({"weight": display_weights[i]})
 
             # self.logger.debug("GROUP %s CLUSTER %s %d%% (%s)" %
             #                   (group['group_id'], c_name, mapping['weight'], mapping_cluster))

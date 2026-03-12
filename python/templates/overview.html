@@ -260,7 +260,7 @@ limitations under the License
                       </td>
                       <td>
                         {% for cluster in route.clusters| sort_clusters_by_service %}
-                          {{ ((cluster.weight * 10.0) + 0.9) // 10 }}%
+                          {{ cluster.weight | round | int }}%
                           {% if not loop.last %}
                           <br/>
                           {% endif %}
