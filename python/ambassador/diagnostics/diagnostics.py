@@ -90,7 +90,8 @@ class DiagCluster(dict):
             ("_hmetric", "unknown"),
             ("_hcolor", "orange"),
         ]:
-            if not self.get(key, None):
+            # Use 'is None' check to allow 0 as a valid weight value
+            if self.get(key, None) is None:
                 self[key] = default
 
         return dict(self)

@@ -121,9 +121,40 @@ class TestCalculateWeightFromMappings:
             [{"_weight": 25}, {"_weight": 50}, {"_weight": 75}, {"_weight": 100}],
             [{"_weight": 43}, {"_weight": 100}],
         ]
-        
+
         for mappings in test_cases:
             result = calculate_weight_from_mappings(mappings)
             total = sum(result)
             assert total == 100, f"Expected sum of 100, got {total} for mappings {mappings}"
+
+
+class TestDiagCluster:
+    """Test suite for DiagCluster default_missing behavior."""
+
+    def test_zero_weight_not_replaced(self):
+        """Test that 0 weight is not replaced with default 100."""
+        from ambassador.diagnostics.diagnostics import DiagCluster
+
+        cluster = DiagCluster({"name": "test-cluster", "weight": 0})
+        result = cluster.default_missing()
+
+        assert result["weight"] == 0, "Weight of 0 should not be replaced with default 100"
+
+    def test_missing_weight_gets_default(self):
+        """Test that missing weight gets default value of 100."""
+        from ambassador.diagnostics.diagnostics import DiagCluster
+
+        cluster = DiagCluster({"name": "test-cluster"})
+        result = cluster.default_missing()
+
+        assert result["weight"] == 100, "Missing weight should default to 100"
+
+    def test_none_weight_gets_default(self):
+        """Test that None weight gets default value of 100."""
+        from ambassador.diagnostics.diagnostics import DiagCluster
+
+        cluster = DiagCluster({"name": "test-cluster", "weight": None})
+        result = cluster.default_missing()
+
+        assert result["weight"] == 100, "None weight should default to 100"
 
