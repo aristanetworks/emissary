@@ -138,7 +138,6 @@ docker/$(LCNAME).docker: python/ambassador.version python/uv.lock $(BUILDER_HOME
 	@printf "${CYN}==> ${GRN}Building image ${BLU}$(LCNAME)${END}\n"
 	docker build -f ${BUILDER_HOME}/Dockerfile . \
 		--platform="$(BUILD_ARCH)" \
-		--build-arg=base=alpine:3.20 \
 		--iidfile=$@
 clean: docker/$(LCNAME).docker.clean
 

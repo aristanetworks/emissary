@@ -15,7 +15,7 @@ push-pytest-images: docker/kat-server.docker.push.remote
 # test-{auth,shadow,stats}.docker
 test_svcs = auth shadow stats
 $(foreach svc,$(test_svcs),docker/test-$(svc).docker): docker/%.docker: docker/%/Dockerfile FORCE
-	docker build --iidfile=$@ $(<D)
+	docker build --platform="$(BUILD_ARCH)" --iidfile=$@ $(<D)
 clean: $(foreach svc,$(test_svcs),docker/test-$(svc).docker.clean)
 
 # kat-client.docker

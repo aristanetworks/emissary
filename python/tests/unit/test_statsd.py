@@ -1,7 +1,6 @@
 import logging
 import os
 
-import httpretty
 import pytest
 
 logging.basicConfig(
@@ -44,9 +43,7 @@ def teardown_function(function):
 
 
 @pytest.mark.compilertest
-@httpretty.activate
 def test_statsd_default():
-    httpretty.register_uri(httpretty.GET, "statsd-sink", body='{"origin": "127.0.0.1"}')
     yaml = """
 apiVersion: getambassador.io/v3alpha1
 kind:  Mapping
@@ -83,9 +80,7 @@ service: beepboop
 
 
 @pytest.mark.compilertest
-@httpretty.activate
 def test_statsd_other():
-    httpretty.register_uri(httpretty.GET, "other-statsd-sink", body='{"origin": "127.0.0.1"}')
     yaml = """
 apiVersion: getambassador.io/v3alpha1
 kind:  Mapping
@@ -123,9 +118,7 @@ service: beepboop
 
 
 @pytest.mark.compilertest
-@httpretty.activate
 def test_dogstatsd():
-    httpretty.register_uri(httpretty.GET, "statsd-sink", body='{"origin": "127.0.0.1"}')
     yaml = """
 apiVersion: getambassador.io/v3alpha1
 kind:  Mapping

@@ -36,4 +36,4 @@ COPY --from=builder /kat-server /work/kat-server
 COPY docker/kat-server/server.crt /work/server.crt
 COPY docker/kat-server/server.key /work/server.key
 
-CMD ["kat-server"]
+CMD ["/work/kat-server"]

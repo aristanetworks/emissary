@@ -11,11 +11,7 @@
 # We use a multi-stage build to create optimized release images:
 # 1. golang stage: Builds Go binaries
 # 2. python-builder stage: Uses UV to build Python dependencies
-# 3. ambassador stage: Final optimized image with binaries and Python packages
-
-# This argument controls the base image that is used for the release
-# containers.
-ARG base="i-forgot-to-set-build-arg-base"
+# 3. ambassador stage: Final image (Debian-based, provides glibc for Envoy)
 
 ########################################
 # The envoy stage
@@ -27,7 +23,7 @@ FROM envoyproxy/envoy:distroless-v1.35.8 as envoy
 # The golang build stage
 ########################################
 
-FROM --platform=$BUILDPLATFORM golang:1.23.3-alpine3.20 as golang
+FROM --platform=$BUILDPLATFORM golang:1.23.3 as golang
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -35,7 +31,7 @@ ARG TARGETARCH
 WORKDIR /go
 
 # Install git for go build (if needed by vendored dependencies)
-RUN apk add --no-cache git
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
 # Build the golang binaries
 ADD api api
@@ -47,17 +43,15 @@ ADD go.sum go.sum
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     mkdir -p /go/bin && \
-    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} time go build -mod=vendor -o /go/bin/ ./cmd/...
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -mod=vendor -o /go/bin/ ./cmd/...
 
 ########################################
 # The Python build stage
 ########################################
 
-FROM alpine:3.20 as python-builder
+FROM python:3.12-slim-bookworm as python-builder
 
 WORKDIR /buildroot
-
-RUN apk add --no-cache python3
 
 # Copy UV from official distroless image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -87,12 +81,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # The artifacts build stage
 ########################################
 
-FROM alpine:3.20 as artifacts
+FROM debian:bookworm-slim as artifacts
 
 WORKDIR /buildroot/ambassador
 
 # Install bash and sudo (needed by post-compile.sh)
-RUN apk add --no-cache bash sudo
+RUN apt-get update && apt-get install -y --no-install-recommends bash sudo && rm -rf /var/lib/apt/lists/*
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/buildroot/bin
 
@@ -111,19 +105,19 @@ RUN mkdir -p /ambassador/sidecars
 ADD manifests/emissary/emissary-crds.yaml.in manifests/emissary/emissary-crds.yaml
 
 ########################################
-# The optimized images
+# The optimized image
 ########################################
 
-FROM ${base} as ambassador
+FROM python:3.12-slim-bookworm as ambassador
 
 # Always have an "ambassador" user as UID 8888. This is what we recommend
-# people run as. (Note that the "-D" actually leaves the password locked.)
-RUN adduser ambassador -u 8888 -G root -D -H -s /bin/false
+# people run as.
+RUN useradd -u 8888 -g 0 -M -s /bin/false ambassador
 
-# External stuff that should change infrequently
-# We install python3 without pinning version since we use whatever comes with the base Alpine
-RUN apk --no-cache add bash curl python3 libcap htop
-RUN apk upgrade --no-cache
+# Install runtime tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl libcap2-bin htop && \
+    rm -rf /var/lib/apt/lists/*
 
 # Our envoy. The capabilities here grant the wrapper the ability to use the
 # cap_net_bind_service cap and for Envoy to inherit it.
@@ -135,8 +129,8 @@ COPY --from=artifacts /opt/ambassador /opt/ambassador
 RUN ln -s /opt/ambassador/bin/* /usr/local/bin/
 RUN setcap cap_net_bind_service=p /opt/ambassador/bin/wrapper
 
-# Copy Python virtual environment and source code from python-builder
-# We use editable install, so the .venv references the python source directory
+# Copy Python virtual environment and source code from python-builder.
+# Both stages use python:3.12-slim-bookworm so the venv's Python symlinks resolve correctly.
 COPY --from=python-builder /buildroot/.venv /buildroot/.venv
 COPY --from=python-builder /buildroot/python /buildroot/ambassador/python
 

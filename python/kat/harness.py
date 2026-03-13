@@ -1019,8 +1019,8 @@ class Runner:
         self.__func__ = test
         self.__test__ = True
 
-    def __call__(self):
-        assert False, "this is here for py.test discovery purposes only"
+    def __call__(self, **kwargs):
+        self.__func__(**kwargs)
 
     def setup(self, selected):
         if not self.done:
