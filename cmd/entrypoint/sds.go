@@ -33,11 +33,10 @@ func BuildSDSSecret(secret *kates.Secret, namespace, name string) (*v3tls.Secret
 		// Handle TLS certificates (server certs)
 		certData, certExists := secret.Data["tls.crt"]
 		keyData, keyExists := secret.Data["tls.key"]
-		// Also check for ca.crt (common for CA certificates)
-		caCertData, caCertExists := secret.Data["ca.crt"]
+		caCertData, caCertExists := secret.Data["ca.pem"]
 
-		if certExists && keyExists {
-			// This is a TLS certificate with both cert and key
+		if certExists && keyExists && len(keyData) > 0 {
+			// TLS certificate with cert and key (e.g. server cert)
 			tlsSecret = &v3tls.Secret{
 				Name: sdsName,
 				Type: &v3tls.Secret_TlsCertificate{
@@ -56,7 +55,7 @@ func BuildSDSSecret(secret *kates.Secret, namespace, name string) (*v3tls.Secret
 				},
 			}
 		} else if certExists {
-			// This is a CA certificate (validation context) with tls.crt
+			// CA certificate (validation context): tls.key absent or empty (e.g. ca_secret)
 			tlsSecret = &v3tls.Secret{
 				Name: sdsName,
 				Type: &v3tls.Secret_ValidationContext{
@@ -70,7 +69,7 @@ func BuildSDSSecret(secret *kates.Secret, namespace, name string) (*v3tls.Secret
 				},
 			}
 		} else if caCertExists {
-			// This is a CA certificate (validation context) with ca.crt
+			// CA certificate (validation context): opaque secret with ca.pem (e.g. cacert_chain_file)
 			tlsSecret = &v3tls.Secret{
 				Name: sdsName,
 				Type: &v3tls.Secret_ValidationContext{
@@ -84,7 +83,7 @@ func BuildSDSSecret(secret *kates.Secret, namespace, name string) (*v3tls.Secret
 				},
 			}
 		} else {
-			return nil, fmt.Errorf("secret %s/%s does not contain valid TLS data (no tls.crt, tls.key, or ca.crt)", namespace, name)
+			return nil, fmt.Errorf("secret %s/%s does not contain valid TLS data (no tls.crt or ca.pem)", namespace, name)
 		}
 
 	default:

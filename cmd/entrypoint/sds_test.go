@@ -82,7 +82,7 @@ func TestBuildSDSSecret_CACertificate(t *testing.T) {
 }
 
 func TestBuildSDSSecret_CACertificateWithCaCrt(t *testing.T) {
-	// CA cert secret with ca.crt key (common format)
+	// Opaque CA cert secret with ca.pem key (cacert_chain_file pattern)
 	secret := &kates.Secret{
 		TypeMeta: kates.TypeMeta{Kind: "Secret"},
 		ObjectMeta: kates.ObjectMeta{
@@ -91,7 +91,37 @@ func TestBuildSDSSecret_CACertificateWithCaCrt(t *testing.T) {
 		},
 		Type: v1.SecretTypeOpaque,
 		Data: map[string][]byte{
-			"ca.crt": []byte("-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----"),
+			"ca.pem": []byte("-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----"),
+		},
+	}
+
+	sdsSecret, err := BuildSDSSecret(secret, "default", "my-app-ca")
+	if err != nil {
+		t.Fatalf("BuildSDSSecret failed: %v", err)
+	}
+
+	if sdsSecret.GetValidationContext() == nil {
+		t.Error("Expected ValidationContext, got nil")
+	}
+	if sdsSecret.GetValidationContext().TrustedCa == nil {
+		t.Error("Expected TrustedCa, got nil")
+	}
+}
+
+func TestBuildSDSSecret_CACertificateWithEmptyKey(t *testing.T) {
+	// kubernetes.io/tls CA cert secret: tls.crt is the CA cert, tls.key is empty.
+	// This is the typical shape of a ca_secret: Kubernetes requires both fields for the
+	// type, but the private key is absent. Must produce a ValidationContext, not a TlsCertificate.
+	secret := &kates.Secret{
+		TypeMeta: kates.TypeMeta{Kind: "Secret"},
+		ObjectMeta: kates.ObjectMeta{
+			Name:      "my-app-ca",
+			Namespace: "default",
+		},
+		Type: v1.SecretTypeTLS,
+		Data: map[string][]byte{
+			"tls.crt": []byte("-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----"),
+			"tls.key": []byte{},
 		},
 	}
 
@@ -105,7 +135,6 @@ func TestBuildSDSSecret_CACertificateWithCaCrt(t *testing.T) {
 		t.Errorf("Expected name '%s', got '%s'", expectedName, sdsSecret.Name)
 	}
 
-	// Check that it's a validation context (not TLS certificate)
 	if sdsSecret.GetValidationContext() == nil {
 		t.Error("Expected ValidationContext, got nil")
 	}

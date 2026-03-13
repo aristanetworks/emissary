@@ -193,10 +193,12 @@ class V3TLSContext(Dict):
                 self.update_tls_certificate_sds(ctx["secret_info"]["sds_cert_name"])
 
             # For validation context (CA cert), use validation_context_sds_secret_config
-            # Only generate SDS config if we have a valid cacert_chain_file path
-            # (indicates the secret was successfully resolved)
+            # if the secret was resolved via ca_secret; fall back to file mode for
+            # cacert_chain_file paths that have no corresponding SDS secret.
             if "sds_cacert_name" in ctx["secret_info"] and ctx["secret_info"].get("cacert_chain_file"):
                 self.update_validation_context_sds(ctx["secret_info"]["sds_cacert_name"])
+            elif ctx["secret_info"].get("cacert_chain_file"):
+                self.update_validation("trusted_ca", ctx["secret_info"]["cacert_chain_file"])
 
             # Note: CRL is not yet supported via SDS in this implementation
             # It would need to be combined with the validation context SDS config
