@@ -650,6 +650,8 @@ class SecretInfo:
         tls_crt = aconf_object.get("tls_crt", None)
         if not tls_crt:
             tls_crt = aconf_object.get("cert-chain_pem")
+        if not tls_crt:
+            tls_crt = aconf_object.get("ca_pem")
 
         tls_key = aconf_object.get("tls_key", None)
         if not tls_key:

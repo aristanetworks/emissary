@@ -1,5 +1,6 @@
 import base64
 import logging
+import os
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
 
 from ..config import Config
@@ -53,6 +54,7 @@ class IRTLSContext(IRResource):
     sni: Optional[str]
 
     is_fallback: bool
+    use_sds: bool
 
     _ambassador_enabled: bool
     _legacy: bool
@@ -90,6 +92,9 @@ class IRTLSContext(IRResource):
             apiVersion=apiVersion,
             **new_args,
         )
+
+        # Check if SDS is enabled via environment variable
+        self.use_sds = os.getenv("AMBASSADOR_ENABLE_SDS", "false").lower() == "true"
 
     def pretty(self) -> str:
         secret_name = self.secret_info.get("secret", "-no secret-")
@@ -233,6 +238,13 @@ class IRTLSContext(IRResource):
                 self.secret_info["cert_chain_file"] = ss.cert_path
                 self.secret_info["private_key_file"] = ss.key_path
 
+                # If SDS is enabled, also store SDS resource names
+                if self.use_sds:
+                    # SDS resource name format: "{namespace}/{secret_name}"
+                    self.secret_info["sds_cert_name"] = f"{ss.namespace}/{ss.secret_name}"
+                    self.secret_info["sds_key_name"] = f"{ss.namespace}/{ss.secret_name}"
+                    self.secret_info["sds_namespace"] = ss.namespace
+
                 if ss.root_cert_path:
                     self.secret_info["cacert_chain_file"] = ss.root_cert_path
 
@@ -266,6 +278,10 @@ class IRTLSContext(IRResource):
                 )
                 self.secret_info["crl_file"] = crls.user_path
 
+                # If SDS is enabled, also store SDS resource name for CRL
+                if self.use_sds:
+                    self.secret_info["sds_crl_name"] = f"{crls.namespace}/{crls.secret_name}"
+
         # OK. Repeat for the ca_secret_name.
         ca_secret_name = self.secret_info.get("ca_secret")
 
@@ -297,6 +313,10 @@ class IRTLSContext(IRResource):
                 # one. We're good to go here.
                 self.ir.logger.debug("TLSContext %s saved CA secret %s" % (self.name, ss.name))
                 self.secret_info["cacert_chain_file"] = ss.cert_path
+
+                # If SDS is enabled, also store SDS resource name for CA cert
+                if self.use_sds:
+                    self.secret_info["sds_cacert_name"] = f"{ss.namespace}/{ss.secret_name}"
 
                 # While we're here, did they set cert_required _in the secret_?
                 if ss.cert_data:

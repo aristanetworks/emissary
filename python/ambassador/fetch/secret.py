@@ -21,6 +21,7 @@ class SecretProcessor(ManagedKubernetesProcessor):
     KNOWN_DATA_KEYS = [
         "tls.crt",  # type="kubernetes.io/tls"
         "tls.key",  # type="kubernetes.io/tls"
+        "ca.pem",   # type="Opaque", used for CA certificates (cacert_chain_file)
         "user.key",  # type="Opaque", used for AES ACME
         "cert-chain.pem",  # type="istio.io/key-and-cert"
         "key.pem",  # type="istio.io/key-and-cert"

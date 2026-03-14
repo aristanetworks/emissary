@@ -51,11 +51,9 @@ class V3Bootstrap(dict):
                                 {
                                     "endpoint": {
                                         "address": {
-                                            "socket_address": {
-                                                # this should be kept in-sync with entrypoint.sh `ambex --ads-listen-address=...`
-                                                "address": "127.0.0.1",
-                                                "port_value": 8003,
-                                                "protocol": "TCP",
+                                            "pipe": {
+                                                # this should be kept in-sync with entrypoint.go ambex --ads-listen-address
+                                                "path": "/tmp/xds.sock"
                                             }
                                         }
                                     }
@@ -64,7 +62,33 @@ class V3Bootstrap(dict):
                         }
                     ],
                 },
-            }
+            },
+            {
+                "name": "sds_cluster",
+                "connect_timeout": "1s",
+                "dns_lookup_family": "V4_ONLY",
+                "http2_protocol_options": {},
+                "lb_policy": "ROUND_ROBIN",
+                "load_assignment": {
+                    "cluster_name": "cluster_sds",
+                    "endpoints": [
+                        {
+                            "lb_endpoints": [
+                                {
+                                    "endpoint": {
+                                        "address": {
+                                            "pipe": {
+                                                # this should be kept in-sync with entrypoint.go ambex --sds-listen-address
+                                                "path": "/tmp/sds.sock"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                },
+            },
         ]
 
         if config.tracing:

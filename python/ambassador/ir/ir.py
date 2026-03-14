@@ -804,6 +804,7 @@ class IR:
             if (
                 aconf_secret.get("tls_crt")
                 or aconf_secret.get("cert-chain_pem")
+                or aconf_secret.get("ca_pem")
                 or aconf_secret.get("user_key")
                 or aconf_secret.get("crl_pem")
             ):
