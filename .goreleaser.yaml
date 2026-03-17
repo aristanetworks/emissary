@@ -26,6 +26,17 @@ builds:
       - linux
     goarch:
       - amd64
+  - id: apiext
+    main: ./cmd/apiext
+    binary: apiext
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
 
 dockers:
   - use: buildx
@@ -34,6 +45,7 @@ dockers:
     dockerfile: Dockerfile.goreleaser
     ids:
       - busyambassador
+      - apiext
     image_templates:
       - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}"
     build_flag_templates:

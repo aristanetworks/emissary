@@ -37,11 +37,13 @@ COPY python/ambassador.version /buildroot/ambassador/python/ambassador.version
 # Copy over busyambassador
 WORKDIR /opt/ambassador/bin
 COPY busyambassador busyambassador
+COPY apiext apiext
 
 # Make the symlinks we need
-RUN for name in agent apiext entrypoint kubestatus; do ln -s busyambassador $name; done && \
+RUN for name in agent entrypoint kubestatus; do ln -s busyambassador $name; done && \
     cd /usr/local/bin && \
-    for name in agent apiext busyambassador entrypoint kubestatus; do ln -s ../../../opt/ambassador/bin/busyambassador $name; done
+    for name in agent busyambassador entrypoint kubestatus; do ln -s ../../../opt/ambassador/bin/busyambassador $name; done && \
+    ln -s ../../../opt/ambassador/bin/apiext apiext
 
 # Set up for a non-root environment.
 # Always have an "ambassador" user as UID 8888. This is what we recommend
