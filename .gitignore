@@ -7,6 +7,10 @@
 .*.stamp
 /docker/kat-server/server.crt
 /docker/kat-server/server.key
+/docker/test-auth/authsvc.crt
+/docker/test-auth/authsvc.key
+/docker/test-shadow/shadowsvc.crt
+/docker/test-shadow/shadowsvc.key
 
 *.pyc
 *~
