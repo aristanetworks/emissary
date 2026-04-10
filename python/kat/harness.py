@@ -1023,8 +1023,14 @@ class Runner:
         self.__func__ = test
         self.__test__ = True
 
-    def __call__(self):
-        assert False, "this is here for py.test discovery purposes only"
+    def __call__(self, request=None, capsys=None, t=None, **kwargs):
+        # Newer pytest versions actually call this method instead of discovering __func__
+        # The test function expects request, capsys, and t as parameters
+        if request is None or capsys is None or t is None:
+            # Old pytest behavior - this should not be called
+            assert False, "this is here for py.test discovery purposes only"
+        # Run the actual test function with the provided fixtures
+        return self.__func__(request, capsys, t)
 
     def setup(self, selected):
         if not self.done:

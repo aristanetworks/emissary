@@ -186,20 +186,26 @@ main() {
 		statnl_done 'done building'
 
 		# Push
-		pushed=0
-		for repo in "${repos[@]}"; do
-			statnl_busy 'Attempting to push %q' "$repo:$tag"
-			docker tag "$id" "$repo:$tag" >&2
-			if docker push "$repo:$tag" >&2; then
-				statnl_done "${GRN}pushed"
-				pushed=1
-				continue
+		# If SKIP_BASE_PYTHON_PUSH is set, we skip pushing entirely for local development
+		if [[ -n "${SKIP_BASE_PYTHON_PUSH:-}" ]]; then
+			msg "Skipping push (SKIP_BASE_PYTHON_PUSH is set)"
+		else
+			pushed=0
+			for repo in "${repos[@]}"; do
+				statnl_busy 'Attempting to push %q' "$repo:$tag"
+				docker tag "$id" "$repo:$tag" >&2
+				if docker push "$repo:$tag" >&2; then
+					statnl_done "${GRN}pushed"
+					pushed=1
+					continue
+				fi
+				statnl_done "${RED}failed to push"
+			done
+			if ! (( pushed )); then
+				error "Could not push locally-built image to any remote repositories"
+				msg "Hint: Set SKIP_BASE_PYTHON_PUSH=1 to skip pushing for local development"
+				return 1
 			fi
-			statnl_done "${RED}failed to push"
-		done
-		if ! (( pushed )); then
-			error "Could not push locally-built image to any remote repositories"
-			return 1
 		fi
 	fi
 
