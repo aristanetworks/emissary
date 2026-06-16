@@ -10,3 +10,4 @@ spec:
   containers:
   - name: backend
     image: {images[kat-client]}
+    imagePullPolicy: IfNotPresent
