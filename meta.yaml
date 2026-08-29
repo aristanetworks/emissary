@@ -1,4 +1,4 @@
-Reponame: code.arista.io/aristanetworks/emissary
+Reponame: code.arista.io/cv/emissary
 Description: Fork of the open-source API gateway emissary-ingress, based on v3.x
 Users:
   Maintainers:
